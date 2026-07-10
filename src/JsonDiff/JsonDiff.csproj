@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <PackageId>JsonDiff</PackageId>
+    <Version>0.2.0</Version>
+    <Authors>Vladyslav Zaiets</Authors>
+    <Description>Tiny semantic JSON diff. Ignores object key order, reports added/removed/changed paths.</Description>
+    <PackageTags>json;diff;compare;semantic</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+
+</Project>

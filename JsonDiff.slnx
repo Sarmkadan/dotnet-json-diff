@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/JsonDiff/JsonDiff.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/JsonDiff.Tests/JsonDiff.Tests.csproj" />
+  </Folder>
+</Solution>
