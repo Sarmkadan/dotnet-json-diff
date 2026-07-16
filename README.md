@@ -75,6 +75,12 @@ var opts = new DiffOptions
 JsonDiffer.Diff(left, right, opts);
 ```
 
+## Architecture
+
+The library is one static differ plus three small data types; the algorithm,
+path semantics, design trade-offs and known limitations are documented in
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
 ## Building
 
 ```
