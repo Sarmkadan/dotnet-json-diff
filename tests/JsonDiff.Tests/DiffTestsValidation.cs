@@ -14,9 +14,11 @@ public static class DiffTestsValidation
     /// </summary>
     /// <param name="value">The <see cref="DiffTests"/> instance to validate.</param>
     /// <returns>
-    /// A read‑only list of human‑readable problem descriptions. An empty list indicates that the instance is valid.
+    /// A read-only list of human-readable problem descriptions. An empty list indicates that the instance is valid.
     /// </returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is <c>null</c>.</exception>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="value"/> is <c>null</c>.
+    /// </exception>
     public static IReadOnlyList<string> Validate(this DiffTests value)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -31,22 +33,24 @@ public static class DiffTestsValidation
     /// Determines whether the specified <see cref="DiffTests"/> instance is valid.
     /// </summary>
     /// <param name="value">The <see cref="DiffTests"/> instance to check.</param>
-    /// <returns><c>true</c> if the instance is valid; otherwise, <c>false</c>.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is <c>null</c>.</exception>
-    public static bool IsValid(this DiffTests value)
-        => Validate(value).Count == 0;
+    /// <returns><c>true</c> if the instance is valid or <c>null</c>; otherwise, <c>false</c>.</returns>
+    public static bool IsValid(this DiffTests? value)
+        => value is null || Validate(value).Count == 0;
 
     /// <summary>
     /// Ensures that the specified <see cref="DiffTests"/> instance is valid.
     /// </summary>
     /// <param name="value">The <see cref="DiffTests"/> instance to validate.</param>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is <c>null</c>.</exception>
-    /// <exception cref="ArgumentException">
-    /// Thrown when the instance is not valid. The exception message contains a semicolon‑separated list of problems.
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="value"/> is <c>null</c>.
     /// </exception>
-    public static void EnsureValid(this DiffTests value)
+    /// <exception cref="ArgumentException">
+    /// Thrown when the instance is not valid.
+    /// </exception>
+    public static void EnsureValid(this DiffTests? value)
     {
-        ArgumentNullException.ThrowIfNull(value);
+        if (value is null)
+            return;
 
         var problems = Validate(value);
         if (problems.Count > 0)
