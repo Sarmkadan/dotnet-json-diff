@@ -25,10 +25,10 @@ public static class DiffTestsExtensions
         ArgumentNullException.ThrowIfNull(changes);
         ArgumentException.ThrowIfNullOrEmpty(path);
 
-        var change = changes.FirstOrDefault(c => string.Equals(c.Path, path, StringComparison.Ordinal));
-        return change.Path is null
-            ? throw new InvalidOperationException($"No change found at path '{path}'")
-            : change;
+        return changes.FirstOrDefault(c => string.Equals(c.Path, path, StringComparison.Ordinal)) is var change
+            && change.Path is not null
+                ? change
+                : throw new InvalidOperationException($"No change found at path '{path}'");
     }
 
     /// <summary>
@@ -42,12 +42,11 @@ public static class DiffTestsExtensions
     {
         ArgumentNullException.ThrowIfNull(changes);
 
-        var list = changes.ToList();
-        return list.Count switch
+        return changes.ToList() switch
         {
-            0 => throw new InvalidOperationException("Expected exactly one change but found none."),
-            1 => list[0],
-            _ => throw new InvalidOperationException($"Expected exactly one change but found {list.Count}.")
+            [] => throw new InvalidOperationException("Expected exactly one change but found none."),
+            [var single] => single,
+            var list => throw new InvalidOperationException($"Expected exactly one change but found {list.Count}.")
         };
     }
 
@@ -68,13 +67,10 @@ public static class DiffTestsExtensions
             throw new InvalidOperationException("Expected changes but found none.");
         }
 
-        foreach (var change in list)
+        if (list.Any(change => change.Kind != expectedKind))
         {
-            if (change.Kind != expectedKind)
-            {
-                throw new InvalidOperationException(
-                    $"Expected all changes to have kind '{expectedKind}' but found '{change.Kind}' at path '{change.Path}'");
-            }
+            throw new InvalidOperationException(
+                $"Expected all changes to have kind '{expectedKind}' but found mismatches.");
         }
     }
 
@@ -116,6 +112,7 @@ public static class DiffTestsExtensions
                 {
                     throw new InvalidOperationException($"Property '{unescaped}' not found at path '{path}'");
                 }
+
                 current = property;
             }
             else if (current.ValueKind == System.Text.Json.JsonValueKind.Array)
