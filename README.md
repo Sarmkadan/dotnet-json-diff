@@ -4,7 +4,7 @@ A tiny semantic diff for JSON. It compares two documents by structure and value 
 **object key order does not matter** - and reports exactly what was added, removed
 or changed, each anchored to a path.
 
-Built on `System.Text.Json`, no third-party dependencies, single small assembly.
+Built on `System.Text.Json`, no third‑party dependencies, single small assembly.
 
 ## Why
 
@@ -15,7 +15,7 @@ of changes you can log, assert on in tests, or render.
 
 ## Install
 
-```
+```bash
 dotnet add package JsonDiff
 ```
 
@@ -36,7 +36,7 @@ foreach (var change in JsonDiffer.Diff(left, right))
 Key order (`active`/`user`, `name`/`roles`) is ignored; only the genuinely new
 array element shows up.
 
-You can also diff already-parsed elements:
+You can also diff already‑parsed elements:
 
 ```csharp
 using var l = JsonDocument.Parse(left);
@@ -55,15 +55,6 @@ Each `JsonChange` carries:
 | `Left`  | value on the left doc (`null` for `Added`)                      |
 | `Right` | value on the right doc (`null` for `Removed`)                   |
 
-## Semantics
-
-- **Objects** are matched by property name, order-independent.
-- **Arrays** are compared positionally (by index). Extra tail elements read as
-  `Added`/`Removed`. Reordering an array *is* reported - order is meaningful in
-  arrays, unlike object keys.
-- A node whose JSON kind changes (e.g. object becomes a number) is reported as a
-  single `Changed` at that path, without descending.
-
 ## Options
 
 ```csharp
@@ -75,15 +66,46 @@ var opts = new DiffOptions
 JsonDiffer.Diff(left, right, opts);
 ```
 
+## DiffTests
+
+`DiffTests` is a test suite that verifies the behavior of `JsonDiffer`. It contains a collection of `[Fact]` methods that each assert a specific diff scenario, such as handling of identical documents, property order, added/removed properties, scalar changes, array handling, numeric tolerance, case‑insensitive property matching, escaped path segments, and the `ToString` formatting of `JsonChange`.
+
+Example usage (e.g., in a console app or another test project) can invoke the individual test methods directly:
+
+```csharp
+using JsonDiff;
+using Xunit;
+
+var suite = new JsonDiff.Tests.DiffTests();
+
+suite.IdenticalDocuments_ProduceNoChanges();
+suite.KeyOrder_IsIgnored();
+suite.AddedProperty_IsReported();
+suite.RemovedProperty_IsReported();
+suite.ChangedScalar_IsReported();
+suite.KindChange_IsReportedWithoutDescent();
+suite.NestedPaths_UseSlashSeparator();
+suite.Arrays_DiffByIndex();
+suite.ShorterArray_ReportsRemovedTail();
+suite.LongerArray_ReportsAddedTail();
+suite.NumericTolerance_TreatsEquivalentNumbersAsEqual();
+suite.NumericTolerance_Off_ReportsRawTextDifference();
+suite.IgnorePropertyCase_MatchesRegardlessOfCase();
+suite.PathSegmentsWithSlash_AreEscaped();
+suite.ToString_FormatsChange();
+```
+
+Running the above will execute the same assertions that the automated test runner performs.
+
 ## Architecture
 
 The library is one static differ plus three small data types; the algorithm,
-path semantics, design trade-offs and known limitations are documented in
+path semantics, design trade‑offs and known limitations are documented in
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Building
 
-```
+```bash
 dotnet build
 dotnet test
 ```
