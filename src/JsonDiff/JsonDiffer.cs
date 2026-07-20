@@ -26,11 +26,11 @@ public static class JsonDiffer
     {
         options ??= DiffOptions.Default;
         var changes = new List<JsonChange>();
-        Walk("/", left, right, options, changes);
+        Walk("/", left, right, options, changes, 0);
         return changes;
     }
 
-    private static void Walk(string path, JsonElement left, JsonElement right, DiffOptions opt, List<JsonChange> sink)
+    private static void Walk(string path, JsonElement left, JsonElement right, DiffOptions opt, List<JsonChange> sink, int depth)
     {
         // Different JSON kinds at the same path -> a changed value, no descent.
         if (left.ValueKind != right.ValueKind)
@@ -39,22 +39,33 @@ public static class JsonDiffer
             return;
         }
 
+        // Check if we've exceeded max depth
+        if (opt.MaxDepth.HasValue && depth >= opt.MaxDepth.Value)
+        {
+            // Compare subtrees with raw text equality
+            if (!string.Equals(left.GetRawText(), right.GetRawText(), StringComparison.Ordinal))
+            {
+                sink.Add(new JsonChange(ChangeKind.Changed, path, left.Clone(), right.Clone()));
+            }
+            return;
+        }
+
         switch (left.ValueKind)
         {
             case JsonValueKind.Object:
-                WalkObject(path, left, right, opt, sink);
+                WalkObject(path, left, right, opt, sink, depth);
                 break;
             case JsonValueKind.Array:
-                WalkArray(path, left, right, opt, sink);
+                WalkArray(path, left, right, opt, sink, depth);
                 break;
             default:
                 if (!ScalarEquals(left, right, opt))
-                    sink.Add(new JsonChange(ChangeKind.Changed, path, left.Clone(), right.Clone()));
+                sink.Add(new JsonChange(ChangeKind.Changed, path, left.Clone(), right.Clone()));
                 break;
         }
     }
 
-    private static void WalkObject(string path, JsonElement left, JsonElement right, DiffOptions opt, List<JsonChange> sink)
+    private static void WalkObject(string path, JsonElement left, JsonElement right, DiffOptions opt, List<JsonChange> sink, int depth)
     {
         var comparer = opt.IgnorePropertyCase
             ? StringComparer.OrdinalIgnoreCase
@@ -71,7 +82,7 @@ public static class JsonDiffer
             seen.Add(p.Name);
             var childPath = Join(path, p.Name);
             if (rightProps.TryGetValue(p.Name, out var rv))
-                Walk(childPath, p.Value, rv, opt, sink);
+                Walk(childPath, p.Value, rv, opt, sink, depth + 1);
             else
                 sink.Add(new JsonChange(ChangeKind.Removed, childPath, p.Value.Clone(), null));
         }
@@ -84,14 +95,14 @@ public static class JsonDiffer
         }
     }
 
-    private static void WalkArray(string path, JsonElement left, JsonElement right, DiffOptions opt, List<JsonChange> sink)
+    private static void WalkArray(string path, JsonElement left, JsonElement right, DiffOptions opt, List<JsonChange> sink, int depth)
     {
         var l = left.EnumerateArray().ToArray();
         var r = right.EnumerateArray().ToArray();
         var common = Math.Min(l.Length, r.Length);
 
         for (var i = 0; i < common; i++)
-            Walk(Join(path, i.ToString()), l[i], r[i], opt, sink);
+            Walk(Join(path, i.ToString()), l[i], r[i], opt, sink, depth + 1);
 
         for (var i = common; i < l.Length; i++)
             sink.Add(new JsonChange(ChangeKind.Removed, Join(path, i.ToString()), l[i].Clone(), null));

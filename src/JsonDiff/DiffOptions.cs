@@ -18,5 +18,12 @@ public sealed class DiffOptions
     /// </summary>
     public bool IgnorePropertyCase { get; init; }
 
+    /// <summary>
+    /// Maximum depth to traverse when diffing nested objects/arrays.
+    /// When <c>null</c>, no limit is applied (unlimited depth).
+    /// Defaults to <c>null</c>.
+    /// </summary>
+    public int? MaxDepth { get; init; }
+
     internal static readonly DiffOptions Default = new();
 }
