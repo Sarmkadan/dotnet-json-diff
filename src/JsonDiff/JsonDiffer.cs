@@ -30,6 +30,124 @@ public static class JsonDiffer
         return changes;
     }
 
+    /// <summary>
+    /// Determines whether two JSON strings are deeply equal (semantically equivalent).
+    /// Returns <c>true</c> if the documents are identical or differ only in ways that are considered equal
+    /// according to the provided options (e.g., numeric tolerance, property case sensitivity).
+    /// This is a short-circuiting operation that returns at the first difference found.
+    /// </summary>
+    /// <exception cref="JsonException">Either input is not valid JSON.</exception>
+    public static bool DeepEquals(string left, string right, DiffOptions? options = null)
+    {
+        using var l = JsonDocument.Parse(left);
+        using var r = JsonDocument.Parse(right);
+        return DeepEquals(l.RootElement, r.RootElement, options);
+    }
+
+    /// <summary>
+    /// Determines whether two already-parsed <see cref="JsonElement"/> values are deeply equal.
+    /// Returns <c>true</c> if the elements are identical or differ only in ways that are considered equal
+    /// according to the provided options (e.g., numeric tolerance, property case sensitivity).
+    /// This is a short-circuiting operation that returns at the first difference found.
+    /// </summary>
+    public static bool DeepEquals(JsonElement left, JsonElement right, DiffOptions? options = null)
+    {
+        options ??= DiffOptions.Default;
+        return WalkAndCompare("/", left, right, options, 0);
+    }
+
+    private static bool WalkAndCompare(string path, JsonElement left, JsonElement right, DiffOptions opt, int depth)
+    {
+        // Different JSON kinds at the same path -> not equal
+        if (left.ValueKind != right.ValueKind)
+        {
+            return false;
+        }
+
+        // Check if we've exceeded max depth
+        if (opt.MaxDepth.HasValue && depth >= opt.MaxDepth.Value)
+        {
+            // Compare subtrees with raw text equality - if different, they're not equal
+            return string.Equals(left.GetRawText(), right.GetRawText(), StringComparison.Ordinal);
+        }
+
+        switch (left.ValueKind)
+        {
+            case JsonValueKind.Object:
+                return CompareObjects(path, left, right, opt, depth);
+            case JsonValueKind.Array:
+                return CompareArrays(path, left, right, opt, depth);
+            default:
+                return ScalarEquals(left, right, opt);
+        }
+    }
+
+    private static bool CompareObjects(string path, JsonElement left, JsonElement right, DiffOptions opt, int depth)
+    {
+        var comparer = opt.IgnorePropertyCase
+            ? StringComparer.OrdinalIgnoreCase
+            : StringComparer.Ordinal;
+
+        var rightProps = new Dictionary<string, JsonElement>(comparer);
+        foreach (var p in right.EnumerateObject())
+        {
+            rightProps[p.Name] = p.Value;
+        }
+
+        var seen = new HashSet<string>(comparer);
+
+        foreach (var p in left.EnumerateObject())
+        {
+            seen.Add(p.Name);
+            var childPath = Join(path, p.Name);
+            if (rightProps.TryGetValue(p.Name, out var rv))
+            {
+                if (!WalkAndCompare(childPath, p.Value, rv, opt, depth + 1))
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                // Property exists in left but not in right
+                return false;
+            }
+        }
+
+        foreach (var p in right.EnumerateObject())
+        {
+            if (!seen.Contains(p.Name))
+            {
+                // Property exists in right but not in left
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool CompareArrays(string path, JsonElement left, JsonElement right, DiffOptions opt, int depth)
+    {
+        var l = left.EnumerateArray().ToArray();
+        var r = right.EnumerateArray().ToArray();
+
+        if (l.Length != r.Length)
+        {
+            return false;
+        }
+
+        for (var i = 0; i < l.Length; i++)
+        {
+            var childPath = Join(path, i.ToString());
+            if (!WalkAndCompare(childPath, l[i], r[i], opt, depth + 1))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private static void Walk(string path, JsonElement left, JsonElement right, DiffOptions opt, List<JsonChange> sink, int depth)
     {
         // Different JSON kinds at the same path -> a changed value, no descent.
