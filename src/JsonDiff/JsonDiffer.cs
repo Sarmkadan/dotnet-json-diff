@@ -213,21 +213,132 @@ public static class JsonDiffer
         }
     }
 
-    private static void WalkArray(string path, JsonElement left, JsonElement right, DiffOptions opt, List<JsonChange> sink, int depth)
+private static void WalkArray(string path, JsonElement left, JsonElement right, DiffOptions opt, List<JsonChange> sink, int depth)
+{
+    var l = left.EnumerateArray().ToArray();
+    var r = right.EnumerateArray().ToArray();
+
+    // Handle array shift detection when enabled and arrays have different lengths
+    if (opt.DetectArrayShifts && l.Length != r.Length)
     {
-        var l = left.EnumerateArray().ToArray();
-        var r = right.EnumerateArray().ToArray();
-        var common = Math.Min(l.Length, r.Length);
-
-        for (var i = 0; i < common; i++)
-            Walk(Join(path, i.ToString()), l[i], r[i], opt, sink, depth + 1);
-
-        for (var i = common; i < l.Length; i++)
-            sink.Add(new JsonChange(ChangeKind.Removed, Join(path, i.ToString()), l[i].Clone(), null));
-
-        for (var i = common; i < r.Length; i++)
-            sink.Add(new JsonChange(ChangeKind.Added, Join(path, i.ToString()), null, r[i].Clone()));
+        HandleArrayShifts(path, l, r, opt, sink, depth);
+        return;
     }
+
+    var common = Math.Min(l.Length, r.Length);
+
+    for (var i = 0; i < common; i++)
+        Walk(Join(path, i.ToString()), l[i], r[i], opt, sink, depth + 1);
+
+    for (var i = common; i < l.Length; i++)
+        sink.Add(new JsonChange(ChangeKind.Removed, Join(path, i.ToString()), l[i].Clone(), null));
+
+    for (var i = common; i < r.Length; i++)
+        sink.Add(new JsonChange(ChangeKind.Added, Join(path, i.ToString()), null, r[i].Clone()));
+}
+
+private static void HandleArrayShifts(string path, JsonElement[] l, JsonElement[] r, DiffOptions opt, List<JsonChange> sink, int depth)
+{
+    var shorter = l.Length < r.Length ? l : r;
+    var longer = l.Length < r.Length ? r : l;
+    var isAdded = l.Length < r.Length; // true if right is longer (added elements), false if left is longer (removed elements)
+
+    // Check if shorter array is a prefix of longer array
+    bool isPrefix = true;
+    for (int i = 0; i < shorter.Length; i++)
+    {
+        if (!ElementsEqual(shorter[i], longer[i], opt))
+        {
+            isPrefix = false;
+            break;
+        }
+    }
+
+    if (isPrefix)
+    {
+        // All elements in shorter array match prefix of longer array
+        // Report only the extra elements at the end
+        var startIndex = shorter.Length;
+        for (var i = startIndex; i < longer.Length; i++)
+        {
+            var elementPath = Join(path, i.ToString());
+            if (isAdded)
+                sink.Add(new JsonChange(ChangeKind.Added, elementPath, null, longer[i].Clone()));
+            else
+                sink.Add(new JsonChange(ChangeKind.Removed, elementPath, longer[i].Clone(), null));
+        }
+        return;
+    }
+
+    // Check if shorter array is a suffix of longer array
+    bool isSuffix = true;
+    var offset = longer.Length - shorter.Length;
+    for (int i = 0; i < shorter.Length; i++)
+    {
+        if (!ElementsEqual(shorter[i], longer[offset + i], opt))
+        {
+            isSuffix = false;
+            break;
+        }
+    }
+
+    if (isSuffix)
+    {
+        // All elements in shorter array match suffix of longer array
+        // Report only the extra elements at the beginning
+        for (var i = 0; i < offset; i++)
+        {
+            var elementPath = Join(path, i.ToString());
+            if (isAdded)
+                sink.Add(new JsonChange(ChangeKind.Added, elementPath, null, longer[i].Clone()));
+            else
+                sink.Add(new JsonChange(ChangeKind.Removed, elementPath, longer[i].Clone(), null));
+        }
+        return;
+    }
+
+    // Not a simple shift - fall back to index-by-index comparison
+    var common = Math.Min(l.Length, r.Length);
+    for (var i = 0; i < common; i++)
+        Walk(Join(path, i.ToString()), l[i], r[i], opt, sink, depth + 1);
+
+    for (var i = common; i < l.Length; i++)
+        sink.Add(new JsonChange(ChangeKind.Removed, Join(path, i.ToString()), l[i].Clone(), null));
+
+    for (var i = common; i < r.Length; i++)
+        sink.Add(new JsonChange(ChangeKind.Added, Join(path, i.ToString()), null, r[i].Clone()));
+}
+
+private static bool ElementsEqual(JsonElement a, JsonElement b, DiffOptions opt)
+{
+    if (a.ValueKind != b.ValueKind)
+        return false;
+    
+    switch (a.ValueKind)
+    {
+        case JsonValueKind.Object:
+            // For shift detection, use raw text equality to compare entire objects/arrays
+            return string.Equals(a.GetRawText(), b.GetRawText(), StringComparison.Ordinal);
+        case JsonValueKind.Array:
+            // For shift detection, use raw text equality to compare entire arrays
+            return string.Equals(a.GetRawText(), b.GetRawText(), StringComparison.Ordinal);
+        case JsonValueKind.String:
+            return string.Equals(a.GetString(), b.GetString(), StringComparison.Ordinal);
+        case JsonValueKind.Number:
+            if (opt.NumericTolerance
+                && a.TryGetDouble(out var ad) 
+                && b.TryGetDouble(out var bd))
+                return ad.Equals(bd);
+            return string.Equals(a.GetRawText(), b.GetRawText(), StringComparison.Ordinal);
+        case JsonValueKind.True:
+        case JsonValueKind.False:
+            return true; // Same ValueKind already guaranteed
+        case JsonValueKind.Null:
+            return true; // Same ValueKind already guaranteed
+        default:
+            return string.Equals(a.GetRawText(), b.GetRawText(), StringComparison.Ordinal);
+    }
+}
 
     private static bool ScalarEquals(JsonElement left, JsonElement right, DiffOptions opt)
     {

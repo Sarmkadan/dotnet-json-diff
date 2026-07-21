@@ -266,4 +266,143 @@ public class DiffTests
         Assert.Equal(ChangeKind.Changed, changes[0].Kind);
         Assert.Equal("/items/0", changes[0].Path);
     }
+
+    /// <summary>
+    /// Tests that removing the first element of an array is reported as a single Removed change
+    /// when DetectArrayShifts is enabled.
+    /// </summary>
+    [Fact]
+    public void DetectArrayShifts_RemovedFirstElement_ReportsSingleRemovedChange()
+    {
+        var opts = new DiffOptions { DetectArrayShifts = true };
+        var changes = JsonDiffer.Diff("[1,2,3]", "[2,3]", opts);
+
+        // Should report only the removed first element, not changes at all indices
+        var c = Assert.Single(changes);
+        Assert.Equal(ChangeKind.Removed, c.Kind);
+        Assert.Equal("/0", c.Path);
+        Assert.Equal("1", c.Left?.GetRawText());
+    }
+
+    /// <summary>
+    /// Tests that adding an element at the beginning of an array is reported as a single Added change
+    /// when DetectArrayShifts is enabled.
+    /// </summary>
+    [Fact]
+    public void DetectArrayShifts_AddedFirstElement_ReportsSingleAddedChange()
+    {
+        var opts = new DiffOptions { DetectArrayShifts = true };
+        var changes = JsonDiffer.Diff("[2,3]", "[1,2,3]", opts);
+
+        // Should report only the added first element, not changes at all indices
+        var c = Assert.Single(changes);
+        Assert.Equal(ChangeKind.Added, c.Kind);
+        Assert.Equal("/0", c.Path);
+        Assert.Equal("1", c.Right?.GetRawText());
+    }
+
+    /// <summary>
+    /// Tests that removing the last element of an array is reported as a single Removed change
+    /// when DetectArrayShifts is enabled.
+    /// </summary>
+    [Fact]
+    public void DetectArrayShifts_RemovedLastElement_ReportsSingleRemovedChange()
+    {
+        var opts = new DiffOptions { DetectArrayShifts = true };
+        var changes = JsonDiffer.Diff("[1,2,3]", "[1,2]", opts);
+
+        // Should report only the removed last element
+        var c = Assert.Single(changes);
+        Assert.Equal(ChangeKind.Removed, c.Kind);
+        Assert.Equal("/2", c.Path);
+        Assert.Equal("3", c.Left?.GetRawText());
+    }
+
+    /// <summary>
+    /// Tests that adding an element at the end of an array is reported as a single Added change
+    /// when DetectArrayShifts is enabled.
+    /// </summary>
+    [Fact]
+    public void DetectArrayShifts_AddedLastElement_ReportsSingleAddedChange()
+    {
+        var opts = new DiffOptions { DetectArrayShifts = true };
+        var changes = JsonDiffer.Diff("[1,2]", "[1,2,3]", opts);
+
+        // Should report only the added last element
+        var c = Assert.Single(changes);
+        Assert.Equal(ChangeKind.Added, c.Kind);
+        Assert.Equal("/2", c.Path);
+        Assert.Equal("3", c.Right?.GetRawText());
+    }
+
+    /// <summary>
+    /// Tests that DetectArrayShifts is disabled by default (existing behavior preserved).
+    /// </summary>
+    [Fact]
+    public void DetectArrayShifts_DefaultDisabled_PreservesExistingBehavior()
+    {
+        // Without DetectArrayShifts enabled, should report changes at all indices
+        var changes = JsonDiffer.Diff("[1,2,3]", "[2,3]");
+
+        // Should report multiple changes (the bug this feature fixes)
+        // Old behavior: compares index-by-index, so [1,2,3] vs [2,3] gives:
+        // - /0: 1 vs 2 -> Changed
+        // - /1: 2 vs 3 -> Changed
+        // - /2: 3 vs null -> Removed
+        Assert.Equal(3, changes.Count);
+        Assert.Contains(changes, c => c.Kind == ChangeKind.Changed && c.Path == "/0");
+        Assert.Contains(changes, c => c.Kind == ChangeKind.Changed && c.Path == "/1");
+        Assert.Contains(changes, c => c.Kind == ChangeKind.Removed && c.Path == "/2");
+    }
+
+    /// <summary>
+    /// Tests that DetectArrayShifts handles nested arrays correctly.
+    /// </summary>
+    [Fact]
+    public void DetectArrayShifts_NestedArrays_ReportsCorrectChanges()
+    {
+        var opts = new DiffOptions { DetectArrayShifts = true };
+        var changes = JsonDiffer.Diff(
+            "[[1],[2],[3],[4]]",
+            "[[2],[3],[4]]",
+            opts);
+
+        // Should report only the removed first nested array
+        var c = Assert.Single(changes);
+        Assert.Equal(ChangeKind.Removed, c.Kind);
+        Assert.Equal("/0", c.Path);
+    }
+
+    /// <summary>
+    /// Tests that DetectArrayShifts handles arrays of objects correctly.
+    /// </summary>
+    [Fact]
+    public void DetectArrayShifts_ArraysOfObjects_ReportsCorrectChanges()
+    {
+        var opts = new DiffOptions { DetectArrayShifts = true };
+        var changes = JsonDiffer.Diff(
+            "[{\"id\":1},{\"id\":2},{\"id\":3}]",
+            "[{\"id\":2},{\"id\":3}]",
+            opts);
+
+        // Should report only the removed first object
+        var c = Assert.Single(changes);
+        Assert.Equal(ChangeKind.Removed, c.Kind);
+        Assert.Equal("/0", c.Path);
+    }
+
+    /// <summary>
+    /// Tests that DetectArrayShifts falls back to index-by-index when arrays don't match as prefix/suffix.
+    /// </summary>
+    [Fact]
+    public void DetectArrayShifts_NonMatchingArrays_FallsBackToIndexByIndex()
+    {
+        var opts = new DiffOptions { DetectArrayShifts = true };
+        var changes = JsonDiffer.Diff("[1,2,3]", "[1,9,3]", opts);
+
+        // Should report the changed element in the middle
+        var c = Assert.Single(changes);
+        Assert.Equal(ChangeKind.Changed, c.Kind);
+        Assert.Equal("/1", c.Path);
+    }
 }

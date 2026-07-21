@@ -25,5 +25,13 @@ public sealed class DiffOptions
     /// </summary>
     public int? MaxDepth { get; init; }
 
+    /// <summary>
+    /// When <c>true</c>, arrays that differ in length are checked for shift patterns.
+    /// If the shorter array matches a prefix or suffix of the longer array, only the extra
+    /// elements are reported as Added/Removed at the correct indices.
+    /// Defaults to <c>false</c> to preserve existing behavior.
+    /// </summary>
+    public bool DetectArrayShifts { get; init; }
+
     internal static readonly DiffOptions Default = new();
 }
