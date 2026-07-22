@@ -225,6 +225,22 @@ private static void WalkArray(string path, JsonElement left, JsonElement right, 
         return;
     }
 
+    switch (opt.ArrayComparison)
+    {
+        case ArrayComparison.Ordered:
+            WalkArrayOrdered(path, l, r, opt, sink, depth);
+            break;
+        case ArrayComparison.Unordered:
+            WalkArrayUnordered(path, l, r, opt, sink, depth);
+            break;
+        case ArrayComparison.KeyedBy:
+            WalkArrayKeyed(path, l, r, opt, sink, depth);
+            break;
+    }
+}
+
+private static void WalkArrayOrdered(string path, JsonElement[] l, JsonElement[] r, DiffOptions opt, List<JsonChange> sink, int depth)
+{
     var common = Math.Min(l.Length, r.Length);
 
     for (var i = 0; i < common; i++)
@@ -235,6 +251,160 @@ private static void WalkArray(string path, JsonElement left, JsonElement right, 
 
     for (var i = common; i < r.Length; i++)
         sink.Add(new JsonChange(ChangeKind.Added, Join(path, i.ToString()), null, r[i].Clone()));
+}
+
+private static void WalkArrayUnordered(string path, JsonElement[] l, JsonElement[] r, DiffOptions opt, List<JsonChange> sink, int depth)
+{
+    // For unordered comparison, we need to match elements by deep equality
+    // We'll use a multiset approach: match elements from left to right, report unmatched as removed/added
+
+    var leftElements = l.ToList();
+    var rightElements = r.ToList();
+
+    // First pass: find matching elements (deep equality)
+    var matchedLeftIndices = new bool[leftElements.Count];
+    var matchedRightIndices = new bool[rightElements.Count];
+
+    for (int i = 0; i < leftElements.Count; i++)
+    {
+        for (int j = 0; j < rightElements.Count; j++)
+        {
+            if (!matchedRightIndices[j] && WalkAndCompare(path, leftElements[i], rightElements[j], opt, depth + 1))
+            {
+                matchedLeftIndices[i] = true;
+                matchedRightIndices[j] = true;
+                break;
+            }
+        }
+    }
+
+    // Report removed elements (in left but not matched in right)
+    for (int i = 0; i < leftElements.Count; i++)
+    {
+        if (!matchedLeftIndices[i])
+        {
+            sink.Add(new JsonChange(ChangeKind.Removed, Join(path, i.ToString()), leftElements[i].Clone(), null));
+        }
+    }
+
+    // Report added elements (in right but not matched in left)
+    for (int j = 0; j < rightElements.Count; j++)
+    {
+        if (!matchedRightIndices[j])
+        {
+            sink.Add(new JsonChange(ChangeKind.Added, Join(path, (l.Length + j).ToString()), null, rightElements[j].Clone()));
+        }
+    }
+}
+
+private static void WalkArrayKeyed(string path, JsonElement[] l, JsonElement[] r, DiffOptions opt, List<JsonChange> sink, int depth)
+{
+    if (string.IsNullOrEmpty(opt.ArrayKeySelector))
+    {
+        // Fall back to ordered comparison if no key selector is provided
+        WalkArrayOrdered(path, l, r, opt, sink, depth);
+        return;
+    }
+
+    // Extract key from each element using the JSON-Pointer path
+    var leftDict = new Dictionary<string, JsonElement>();
+    var rightDict = new Dictionary<string, JsonElement>();
+
+    foreach (var element in l)
+    {
+        if (TryGetKey(element, opt.ArrayKeySelector, out var key, out var value))
+        {
+            leftDict[key] = value;
+        }
+        else
+        {
+            // If we can't extract a key, treat the whole element as the value
+            // This will be reported as removed
+            sink.Add(new JsonChange(ChangeKind.Removed, path, element.Clone(), null));
+        }
+    }
+
+    foreach (var element in r)
+    {
+        if (TryGetKey(element, opt.ArrayKeySelector, out var key, out var value))
+        {
+            rightDict[key] = value;
+        }
+        else
+        {
+            // If we can't extract a key, treat as added
+            sink.Add(new JsonChange(ChangeKind.Added, path, null, element.Clone()));
+        }
+    }
+
+    // Compare elements with matching keys
+    foreach (var kvp in leftDict)
+    {
+        if (rightDict.TryGetValue(kvp.Key, out var rightElement))
+        {
+            var elementPath = Join(path, Array.IndexOf(l, kvp.Value).ToString());
+            Walk(elementPath, kvp.Value, rightElement, opt, sink, depth + 1);
+            rightDict.Remove(kvp.Key); // Mark as matched
+        }
+        else
+        {
+            // Key exists in left but not in right - report as removed
+            var elementPath = Join(path, Array.IndexOf(l, kvp.Value).ToString());
+            sink.Add(new JsonChange(ChangeKind.Removed, elementPath, kvp.Value.Clone(), null));
+        }
+    }
+
+    // Report remaining elements in right as added
+    foreach (var kvp in rightDict)
+    {
+        var elementPath = Join(path, (l.Length + Array.IndexOf(r, kvp.Value)).ToString());
+        sink.Add(new JsonChange(ChangeKind.Added, elementPath, null, kvp.Value.Clone()));
+    }
+}
+
+private static bool TryGetKey(JsonElement element, string keySelector, out string key, out JsonElement value)
+{
+    key = null;
+    value = element;
+
+    if (element.ValueKind != JsonValueKind.Object)
+    {
+        return false;
+    }
+
+    // Parse JSON-Pointer path (simplified - only supports simple property names)
+    var pathSegments = keySelector.Split(new[] {'/'}, StringSplitOptions.RemoveEmptyEntries);
+
+    JsonElement current = element;
+    foreach (var segment in pathSegments)
+    {
+        if (current.ValueKind != JsonValueKind.Object)
+        {
+            return false;
+        }
+
+        if (!current.TryGetProperty(segment, out var prop))
+        {
+            return false;
+        }
+
+        current = prop;
+    }
+
+    // The final value is the key
+    if (current.ValueKind == JsonValueKind.String)
+    {
+        key = current.GetString();
+        return true;
+    }
+
+    if (current.ValueKind == JsonValueKind.Number)
+    {
+        key = current.GetRawText();
+        return true;
+    }
+
+    return false;
 }
 
 private static void HandleArrayShifts(string path, JsonElement[] l, JsonElement[] r, DiffOptions opt, List<JsonChange> sink, int depth)

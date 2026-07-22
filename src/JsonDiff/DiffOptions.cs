@@ -1,6 +1,33 @@
 namespace JsonDiff;
 
 /// <summary>
+/// Controls how arrays are compared during diff operations.
+/// </summary>
+public enum ArrayComparison
+{
+    /// <summary>
+    /// Arrays are compared by their index positions (default behavior).
+    /// This maintains backward compatibility with existing code.
+    /// </summary>
+    Ordered,
+
+    /// <summary>
+    /// Arrays are compared as multisets (unordered collections).
+    /// Elements are matched by deep equality, and only genuine additions/removals are reported.
+    /// Order differences are ignored.
+    /// </summary>
+    Unordered,
+
+    /// <summary>
+    /// Arrays are compared by matching elements using a key selector path.
+    /// Elements with matching keys are compared by their content, and only differences
+    /// in matched elements are reported. This treats moved elements as changes rather than
+    /// Remove+Add pairs.
+    /// </summary>
+    KeyedBy
+}
+
+/// <summary>
 /// Tunables for a diff run.
 /// </summary>
 public sealed class DiffOptions
@@ -32,6 +59,19 @@ public sealed class DiffOptions
     /// Defaults to <c>false</c> to preserve existing behavior.
     /// </summary>
     public bool DetectArrayShifts { get; init; }
+
+    /// <summary>
+    /// Controls how arrays are compared during diff operations.
+    /// Defaults to <see cref="ArrayComparison.Ordered"/> for backward compatibility.
+    /// </summary>
+    public ArrayComparison ArrayComparison { get; init; } = ArrayComparison.Ordered;
+
+    /// <summary>
+    /// JSON-Pointer path to a property to use as a key when <see cref="ArrayComparison.KeyedBy"/> is enabled.
+    /// For example, "/id" would match array elements by their "id" property.
+    /// Defaults to <c>null</c>.
+    /// </summary>
+    public string? ArrayKeySelector { get; init; }
 
     internal static readonly DiffOptions Default = new();
 }
