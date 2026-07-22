@@ -73,5 +73,18 @@ public sealed class DiffOptions
     /// </summary>
     public string? ArrayKeySelector { get; init; }
 
+    /// <summary>
+    /// Maximum array size (number of elements) for which array shift detection will be attempted.
+    /// When arrays are larger than this size and <see cref="DetectArrayShifts"/> is enabled,
+    /// the algorithm falls back to positional diffing for performance.
+    /// Defaults to <c>1000</c>.
+    /// </summary>
+    /// <remarks>
+    /// Array shift detection uses O(n²) deep comparison in the worst case.
+    /// For arrays larger than this threshold, the performance impact becomes prohibitive.
+    /// Set to <c>null</c> to disable the size check and always attempt shift detection.
+    /// </remarks>
+    public int? MaxArrayShiftDetectionSize { get; init; } = 1000;
+
     internal static readonly DiffOptions Default = new();
 }
