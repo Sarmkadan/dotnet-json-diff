@@ -11,11 +11,16 @@ namespace JsonDiff;
 /// </param>
 /// <param name="Left">The value on the left document, or <c>null</c> for <see cref="ChangeKind.Added"/>.</param>
 /// <param name="Right">The value on the right document, or <c>null</c> for <see cref="ChangeKind.Removed"/>.</param>
+/// <param name="IsTruncated">
+/// Indicates whether this change is part of a truncated diff result due to hitting a limit
+/// (e.g., maximum depth or maximum number of changes).
+/// </param>
 public readonly record struct JsonChange(
     ChangeKind Kind,
     string Path,
     JsonElement? Left,
-    JsonElement? Right)
+    JsonElement? Right,
+    bool IsTruncated = false)
 {
     /// <summary>Renders the change in a compact <c>+/-/~ path: value</c> form.</summary>
     public override string ToString() => Kind switch

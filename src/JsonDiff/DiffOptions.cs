@@ -86,5 +86,17 @@ public sealed class DiffOptions
     /// </remarks>
     public int? MaxArrayShiftDetectionSize { get; init; } = 1000;
 
+    /// <summary>
+    /// Maximum number of changes to report before truncating the result.
+    /// When <c>null</c>, no limit is applied (unlimited changes).
+    /// Defaults to <c>null</c>.
+    /// </summary>
+    /// <remarks>
+    /// This protects against pathological documents that differ in every leaf node,
+    /// which could otherwise consume excessive memory and CPU.
+    /// When the limit is exceeded, a <see cref="JsonDiffLimitExceededException"/> is thrown.
+    /// </remarks>
+    public int? MaxChanges { get; init; }
+
     internal static readonly DiffOptions Default = new();
 }
