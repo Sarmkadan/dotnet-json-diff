@@ -5,15 +5,27 @@ namespace JsonDiff;
 /// <summary>
 /// Computes a semantic diff between two JSON documents. Object property order is
 /// irrelevant; only structural and value differences are reported.
+/// <para>
+/// Duplicate object keys (which JSON permits and <see cref="JsonElement.EnumerateObject"/>
+/// surfaces verbatim) are resolved with a last-wins policy, matching the behavior of
+/// <see cref="JsonSerializer"/> when deserializing into a dictionary: for each key,
+/// only the value of its last occurrence in the object participates in the comparison.
+/// This applies to both sides of the diff, so <c>{"a":1,"a":2}</c> and <c>{"a":2}</c>
+/// are considered equal.
+/// </para>
 /// </summary>
 public static class JsonDiffer
 {
     /// <summary>
     /// Diffs two raw JSON strings.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="left"/> or <paramref name="right"/> is null.</exception>
     /// <exception cref="JsonException">Either input is not valid JSON.</exception>
     public static IReadOnlyList<JsonChange> Diff(string left, string right, DiffOptions? options = null)
     {
+        ArgumentNullException.ThrowIfNull(left);
+        ArgumentNullException.ThrowIfNull(right);
+
         using var l = JsonDocument.Parse(left);
         using var r = JsonDocument.Parse(right);
         return Diff(l.RootElement, r.RootElement, options);
@@ -36,9 +48,13 @@ public static class JsonDiffer
     /// according to the provided options (e.g., numeric tolerance, property case sensitivity).
     /// This is a short-circuiting operation that returns at the first difference found.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="left"/> or <paramref name="right"/> is null.</exception>
     /// <exception cref="JsonException">Either input is not valid JSON.</exception>
     public static bool DeepEquals(string left, string right, DiffOptions? options = null)
     {
+        ArgumentNullException.ThrowIfNull(left);
+        ArgumentNullException.ThrowIfNull(right);
+
         using var l = JsonDocument.Parse(left);
         using var r = JsonDocument.Parse(right);
         return DeepEquals(l.RootElement, r.RootElement, options);
@@ -88,21 +104,16 @@ public static class JsonDiffer
             ? StringComparer.OrdinalIgnoreCase
             : StringComparer.Ordinal;
 
-        var rightProps = new Dictionary<string, JsonElement>(comparer);
-        foreach (var p in right.EnumerateObject())
-        {
-            rightProps[p.Name] = p.Value;
-        }
+        // Last-wins on duplicate keys, matching JsonSerializer's dictionary behavior.
+        var leftProps = CollectProperties(left, comparer);
+        var rightProps = CollectProperties(right, comparer);
 
-        var seen = new HashSet<string>(comparer);
-
-        foreach (var p in left.EnumerateObject())
+        foreach (var (name, lv) in leftProps)
         {
-            seen.Add(p.Name);
-            var childPath = Join(path, p.Name);
-            if (rightProps.TryGetValue(p.Name, out var rv))
+            var childPath = Join(path, name);
+            if (rightProps.TryGetValue(name, out var rv))
             {
-                if (!WalkAndCompare(childPath, p.Value, rv, opt, depth + 1))
+                if (!WalkAndCompare(childPath, lv, rv, opt, depth + 1))
                 {
                     return false;
                 }
@@ -114,9 +125,9 @@ public static class JsonDiffer
             }
         }
 
-        foreach (var p in right.EnumerateObject())
+        foreach (var name in rightProps.Keys)
         {
-            if (!seen.Contains(p.Name))
+            if (!leftProps.ContainsKey(name))
             {
                 // Property exists in right but not in left
                 return false;
@@ -189,28 +200,39 @@ public static class JsonDiffer
             ? StringComparer.OrdinalIgnoreCase
             : StringComparer.Ordinal;
 
-        var rightProps = new Dictionary<string, JsonElement>(comparer);
-        foreach (var p in right.EnumerateObject())
-            rightProps[p.Name] = p.Value;
+        // Last-wins on duplicate keys, matching JsonSerializer's dictionary behavior.
+        var leftProps = CollectProperties(left, comparer);
+        var rightProps = CollectProperties(right, comparer);
 
-        var seen = new HashSet<string>(comparer);
-
-        foreach (var p in left.EnumerateObject())
+        foreach (var (name, lv) in leftProps)
         {
-            seen.Add(p.Name);
-            var childPath = Join(path, p.Name);
-            if (rightProps.TryGetValue(p.Name, out var rv))
-                Walk(childPath, p.Value, rv, opt, sink, depth + 1);
+            var childPath = Join(path, name);
+            if (rightProps.TryGetValue(name, out var rv))
+                Walk(childPath, lv, rv, opt, sink, depth + 1);
             else
-                sink.Add(new JsonChange(ChangeKind.Removed, childPath, p.Value.Clone(), null));
+                sink.Add(new JsonChange(ChangeKind.Removed, childPath, lv.Clone(), null));
         }
 
-        foreach (var p in right.EnumerateObject())
+        foreach (var (name, rv) in rightProps)
         {
-            if (seen.Contains(p.Name))
+            if (leftProps.ContainsKey(name))
                 continue;
-            sink.Add(new JsonChange(ChangeKind.Added, Join(path, p.Name), null, p.Value.Clone()));
+            sink.Add(new JsonChange(ChangeKind.Added, Join(path, name), null, rv.Clone()));
         }
+    }
+
+    /// <summary>
+    /// Flattens an object's properties into a dictionary using a last-wins policy for
+    /// duplicate keys: when the same name occurs more than once, the value of the last
+    /// occurrence replaces earlier ones, mirroring <see cref="JsonSerializer"/>.
+    /// Insertion order of first occurrences is preserved.
+    /// </summary>
+    private static Dictionary<string, JsonElement> CollectProperties(JsonElement obj, StringComparer comparer)
+    {
+        var props = new Dictionary<string, JsonElement>(comparer);
+        foreach (var p in obj.EnumerateObject())
+            props[p.Name] = p.Value;
+        return props;
     }
 
 private static void WalkArray(string path, JsonElement left, JsonElement right, DiffOptions opt, List<JsonChange> sink, int depth)
@@ -495,11 +517,7 @@ private static bool ElementsEqual(JsonElement a, JsonElement b, DiffOptions opt)
         case JsonValueKind.String:
             return string.Equals(a.GetString(), b.GetString(), StringComparison.Ordinal);
         case JsonValueKind.Number:
-            if (opt.NumericTolerance
-                && a.TryGetDouble(out var ad) 
-                && b.TryGetDouble(out var bd))
-                return ad.Equals(bd);
-            return string.Equals(a.GetRawText(), b.GetRawText(), StringComparison.Ordinal);
+            return NumbersEqual(a, b, opt);
         case JsonValueKind.True:
         case JsonValueKind.False:
             return true; // Same ValueKind already guaranteed
@@ -521,14 +539,36 @@ private static bool ElementsEqual(JsonElement a, JsonElement b, DiffOptions opt)
             case JsonValueKind.String:
                 return string.Equals(left.GetString(), right.GetString(), StringComparison.Ordinal);
             case JsonValueKind.Number:
-                if (opt.NumericTolerance
-                    && left.TryGetDouble(out var ld)
-                    && right.TryGetDouble(out var rd))
-                    return ld.Equals(rd);
-                return string.Equals(left.GetRawText(), right.GetRawText(), StringComparison.Ordinal);
+                return NumbersEqual(left, right, opt);
             default:
                 return string.Equals(left.GetRawText(), right.GetRawText(), StringComparison.Ordinal);
         }
+    }
+
+    /// <summary>
+    /// Compares two JSON number elements according to the configured number-comparison strategy.
+    /// In semantic mode, values are compared as <see cref="decimal"/> when both parse (so
+    /// <c>1</c> == <c>1.0</c>, <c>100</c> == <c>1e2</c>, <c>0</c> == <c>-0</c>, and 28+ digit
+    /// decimals keep full precision instead of being rounded through <see cref="double"/>).
+    /// Values outside the decimal range fall back to <see cref="double"/>, and finally to
+    /// ordinal raw-text comparison (e.g. <c>1e400</c> vs <c>1e400</c>).
+    /// </summary>
+    private static bool NumbersEqual(JsonElement left, JsonElement right, DiffOptions opt)
+    {
+        var leftRaw = left.GetRawText();
+        var rightRaw = right.GetRawText();
+
+        if (!opt.NumericTolerance || opt.NumberComparison == NumberComparison.Exact)
+            return string.Equals(leftRaw, rightRaw, StringComparison.Ordinal);
+
+        if (decimal.TryParse(leftRaw, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var ld)
+            && decimal.TryParse(rightRaw, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var rd))
+            return ld == rd;
+
+        if (left.TryGetDouble(out var lf) && right.TryGetDouble(out var rf))
+            return lf.Equals(rf);
+
+        return string.Equals(leftRaw, rightRaw, StringComparison.Ordinal);
     }
 
     private static string Join(string parent, string segment)

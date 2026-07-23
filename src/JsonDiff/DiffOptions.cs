@@ -28,6 +28,27 @@ public enum ArrayComparison
 }
 
 /// <summary>
+/// Controls how JSON numbers are compared for equality.
+/// </summary>
+public enum NumberComparison
+{
+    /// <summary>
+    /// Numbers are equal only when their raw JSON text matches exactly.
+    /// Under this mode <c>1</c> and <c>1.0</c> are reported as different values.
+    /// </summary>
+    Exact,
+
+    /// <summary>
+    /// Numbers are compared by numeric value: <c>1</c>, <c>1.0</c> and <c>1e0</c> are equal,
+    /// as are <c>100</c> and <c>1e2</c>, and <c>0</c> and <c>-0</c>.
+    /// Values are compared as <see cref="decimal"/> when both parse (preserving precision
+    /// that <see cref="double"/> would round away); values outside the decimal range
+    /// (e.g. <c>1e400</c>) fall back to <see cref="double"/> and finally to raw-text comparison.
+    /// </summary>
+    Semantic
+}
+
+/// <summary>
 /// Tunables for a diff run.
 /// </summary>
 public sealed class DiffOptions
@@ -38,6 +59,17 @@ public sealed class DiffOptions
     /// Defaults to <c>true</c>.
     /// </summary>
     public bool NumericTolerance { get; init; } = true;
+
+    /// <summary>
+    /// Strategy used to compare JSON numbers.
+    /// <see cref="JsonDiff.NumberComparison.Semantic"/> (the default) treats numerically-equal
+    /// values with different lexical forms (<c>1</c> vs <c>1.0</c>, <c>100</c> vs <c>1e2</c>,
+    /// <c>0</c> vs <c>-0</c>) as equal, using <see cref="decimal"/> precision where possible.
+    /// <see cref="JsonDiff.NumberComparison.Exact"/> requires identical raw JSON text.
+    /// Applies only when <see cref="NumericTolerance"/> is <c>true</c>; when it is <c>false</c>,
+    /// numbers are always compared by raw text.
+    /// </summary>
+    public NumberComparison NumberComparison { get; init; } = NumberComparison.Semantic;
 
     /// <summary>
     /// When <c>true</c>, object property names are compared case-insensitively.
