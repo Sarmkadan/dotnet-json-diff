@@ -12,5 +12,11 @@ public enum ChangeKind
     Removed,
 
     /// <summary>A value present in both documents whose content differs.</summary>
-    Changed
+    Changed,
+
+/// <summary>
+/// A value that has been moved within an array (detected when DetectArrayShifts is enabled).
+/// The value exists at a different index in the right document compared to the left.
+/// </summary>
+Moved
 }

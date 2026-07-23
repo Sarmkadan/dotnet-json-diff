@@ -27,6 +27,7 @@ public readonly record struct JsonChange(
     {
         ChangeKind.Added => $"+ {Path}: {Render(Right)}",
         ChangeKind.Removed => $"- {Path}: {Render(Left)}",
+        ChangeKind.Moved => $"→ {Path}: {Render(Right)}",
         _ => $"~ {Path}: {Render(Left)} -> {Render(Right)}"
     };
 
