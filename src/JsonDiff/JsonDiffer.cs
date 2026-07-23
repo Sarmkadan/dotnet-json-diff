@@ -38,7 +38,7 @@ public static class JsonDiffer
     {
         options ??= DiffOptions.Default;
         var changes = new List<JsonChange>();
-        Walk("/", left, right, options, changes, 0);
+        Walk(JsonPointer.Root, left, right, options, changes, 0);
         return changes;
     }
 
@@ -69,10 +69,10 @@ public static class JsonDiffer
     public static bool DeepEquals(JsonElement left, JsonElement right, DiffOptions? options = null)
     {
         options ??= DiffOptions.Default;
-        return WalkAndCompare("/", left, right, options, 0);
+        return WalkAndCompare(JsonPointer.Root, left, right, options, 0);
     }
 
-    private static bool WalkAndCompare(string path, JsonElement left, JsonElement right, DiffOptions opt, int depth)
+    private static bool WalkAndCompare(JsonPointer path, JsonElement left, JsonElement right, DiffOptions opt, int depth)
     {
         // Different JSON kinds at the same path -> not equal
         if (left.ValueKind != right.ValueKind)
@@ -98,7 +98,7 @@ public static class JsonDiffer
         }
     }
 
-    private static bool CompareObjects(string path, JsonElement left, JsonElement right, DiffOptions opt, int depth)
+    private static bool CompareObjects(JsonPointer path, JsonElement left, JsonElement right, DiffOptions opt, int depth)
     {
         var comparer = opt.IgnorePropertyCase
             ? StringComparer.OrdinalIgnoreCase
@@ -110,7 +110,7 @@ public static class JsonDiffer
 
         foreach (var (name, lv) in leftProps)
         {
-            var childPath = Join(path, name);
+            var childPath = path.Append(name);
             if (rightProps.TryGetValue(name, out var rv))
             {
                 if (!WalkAndCompare(childPath, lv, rv, opt, depth + 1))
@@ -137,7 +137,7 @@ public static class JsonDiffer
         return true;
     }
 
-    private static bool CompareArrays(string path, JsonElement left, JsonElement right, DiffOptions opt, int depth)
+    private static bool CompareArrays(JsonPointer path, JsonElement left, JsonElement right, DiffOptions opt, int depth)
     {
         var l = left.EnumerateArray().ToArray();
         var r = right.EnumerateArray().ToArray();
@@ -149,7 +149,7 @@ public static class JsonDiffer
 
         for (var i = 0; i < l.Length; i++)
         {
-            var childPath = Join(path, i.ToString());
+            var childPath = path.Append(i.ToString());
             if (!WalkAndCompare(childPath, l[i], r[i], opt, depth + 1))
             {
                 return false;
@@ -159,12 +159,12 @@ public static class JsonDiffer
         return true;
     }
 
-    private static void Walk(string path, JsonElement left, JsonElement right, DiffOptions opt, List<JsonChange> sink, int depth)
+    private static void Walk(JsonPointer path, JsonElement left, JsonElement right, DiffOptions opt, List<JsonChange> sink, int depth)
     {
         // Different JSON kinds at the same path -> a changed value, no descent.
         if (left.ValueKind != right.ValueKind)
         {
-            sink.Add(new JsonChange(ChangeKind.Changed, path, left.Clone(), right.Clone()));
+            sink.Add(new JsonChange(ChangeKind.Changed, path.ToPointerString(), left.Clone(), right.Clone()));
             return;
         }
 
@@ -174,7 +174,7 @@ public static class JsonDiffer
             // Compare subtrees with raw text equality
             if (!string.Equals(left.GetRawText(), right.GetRawText(), StringComparison.Ordinal))
             {
-                sink.Add(new JsonChange(ChangeKind.Changed, path, left.Clone(), right.Clone()));
+                sink.Add(new JsonChange(ChangeKind.Changed, path.ToPointerString(), left.Clone(), right.Clone()));
             }
             return;
         }
@@ -189,12 +189,12 @@ public static class JsonDiffer
                 break;
             default:
                 if (!ScalarEquals(left, right, opt))
-                sink.Add(new JsonChange(ChangeKind.Changed, path, left.Clone(), right.Clone()));
+                sink.Add(new JsonChange(ChangeKind.Changed, path.ToPointerString(), left.Clone(), right.Clone()));
                 break;
         }
     }
 
-    private static void WalkObject(string path, JsonElement left, JsonElement right, DiffOptions opt, List<JsonChange> sink, int depth)
+    private static void WalkObject(JsonPointer path, JsonElement left, JsonElement right, DiffOptions opt, List<JsonChange> sink, int depth)
     {
         var comparer = opt.IgnorePropertyCase
             ? StringComparer.OrdinalIgnoreCase
@@ -206,18 +206,18 @@ public static class JsonDiffer
 
         foreach (var (name, lv) in leftProps)
         {
-            var childPath = Join(path, name);
+            var childPath = path.Append(name);
             if (rightProps.TryGetValue(name, out var rv))
                 Walk(childPath, lv, rv, opt, sink, depth + 1);
             else
-                sink.Add(new JsonChange(ChangeKind.Removed, childPath, lv.Clone(), null));
+                sink.Add(new JsonChange(ChangeKind.Removed, childPath.ToPointerString(), lv.Clone(), null));
         }
 
         foreach (var (name, rv) in rightProps)
         {
             if (leftProps.ContainsKey(name))
                 continue;
-            sink.Add(new JsonChange(ChangeKind.Added, Join(path, name), null, rv.Clone()));
+            sink.Add(new JsonChange(ChangeKind.Added, path.Append(name).ToPointerString(), null, rv.Clone()));
         }
     }
 
@@ -235,7 +235,7 @@ public static class JsonDiffer
         return props;
     }
 
-private static void WalkArray(string path, JsonElement left, JsonElement right, DiffOptions opt, List<JsonChange> sink, int depth)
+private static void WalkArray(JsonPointer path, JsonElement left, JsonElement right, DiffOptions opt, List<JsonChange> sink, int depth)
 {
     var l = left.EnumerateArray().ToArray();
     var r = right.EnumerateArray().ToArray();
@@ -261,21 +261,21 @@ private static void WalkArray(string path, JsonElement left, JsonElement right, 
     }
 }
 
-private static void WalkArrayOrdered(string path, JsonElement[] l, JsonElement[] r, DiffOptions opt, List<JsonChange> sink, int depth)
+private static void WalkArrayOrdered(JsonPointer path, JsonElement[] l, JsonElement[] r, DiffOptions opt, List<JsonChange> sink, int depth)
 {
     var common = Math.Min(l.Length, r.Length);
 
     for (var i = 0; i < common; i++)
-        Walk(Join(path, i.ToString()), l[i], r[i], opt, sink, depth + 1);
+        Walk(path.Append(i.ToString()), l[i], r[i], opt, sink, depth + 1);
 
     for (var i = common; i < l.Length; i++)
-        sink.Add(new JsonChange(ChangeKind.Removed, Join(path, i.ToString()), l[i].Clone(), null));
+        sink.Add(new JsonChange(ChangeKind.Removed, path.Append(i.ToString()).ToPointerString(), l[i].Clone(), null));
 
     for (var i = common; i < r.Length; i++)
-        sink.Add(new JsonChange(ChangeKind.Added, Join(path, i.ToString()), null, r[i].Clone()));
+        sink.Add(new JsonChange(ChangeKind.Added, path.Append(i.ToString()).ToPointerString(), null, r[i].Clone()));
 }
 
-private static void WalkArrayUnordered(string path, JsonElement[] l, JsonElement[] r, DiffOptions opt, List<JsonChange> sink, int depth)
+private static void WalkArrayUnordered(JsonPointer path, JsonElement[] l, JsonElement[] r, DiffOptions opt, List<JsonChange> sink, int depth)
 {
     // For unordered comparison, we need to match elements by deep equality
     // We'll use a multiset approach: match elements from left to right, report unmatched as removed/added
@@ -305,7 +305,7 @@ private static void WalkArrayUnordered(string path, JsonElement[] l, JsonElement
     {
         if (!matchedLeftIndices[i])
         {
-            sink.Add(new JsonChange(ChangeKind.Removed, Join(path, i.ToString()), leftElements[i].Clone(), null));
+            sink.Add(new JsonChange(ChangeKind.Removed, path.Append(i.ToString()).ToPointerString(), leftElements[i].Clone(), null));
         }
     }
 
@@ -314,12 +314,12 @@ private static void WalkArrayUnordered(string path, JsonElement[] l, JsonElement
     {
         if (!matchedRightIndices[j])
         {
-            sink.Add(new JsonChange(ChangeKind.Added, Join(path, (l.Length + j).ToString()), null, rightElements[j].Clone()));
+            sink.Add(new JsonChange(ChangeKind.Added, path.Append((l.Length + j).ToString()).ToPointerString(), null, rightElements[j].Clone()));
         }
     }
 }
 
-private static void WalkArrayKeyed(string path, JsonElement[] l, JsonElement[] r, DiffOptions opt, List<JsonChange> sink, int depth)
+private static void WalkArrayKeyed(JsonPointer path, JsonElement[] l, JsonElement[] r, DiffOptions opt, List<JsonChange> sink, int depth)
 {
     if (string.IsNullOrEmpty(opt.ArrayKeySelector))
     {
@@ -342,7 +342,7 @@ private static void WalkArrayKeyed(string path, JsonElement[] l, JsonElement[] r
         {
             // If we can't extract a key, treat the whole element as the value
             // This will be reported as removed
-            sink.Add(new JsonChange(ChangeKind.Removed, path, element.Clone(), null));
+            sink.Add(new JsonChange(ChangeKind.Removed, path.ToPointerString(), element.Clone(), null));
         }
     }
 
@@ -355,7 +355,7 @@ private static void WalkArrayKeyed(string path, JsonElement[] l, JsonElement[] r
         else
         {
             // If we can't extract a key, treat as added
-            sink.Add(new JsonChange(ChangeKind.Added, path, null, element.Clone()));
+            sink.Add(new JsonChange(ChangeKind.Added, path.ToPointerString(), null, element.Clone()));
         }
     }
 
@@ -364,23 +364,23 @@ private static void WalkArrayKeyed(string path, JsonElement[] l, JsonElement[] r
     {
         if (rightDict.TryGetValue(kvp.Key, out var rightElement))
         {
-            var elementPath = Join(path, Array.IndexOf(l, kvp.Value).ToString());
+            var elementPath = path.Append(Array.IndexOf(l, kvp.Value).ToString());
             Walk(elementPath, kvp.Value, rightElement, opt, sink, depth + 1);
             rightDict.Remove(kvp.Key); // Mark as matched
         }
         else
         {
             // Key exists in left but not in right - report as removed
-            var elementPath = Join(path, Array.IndexOf(l, kvp.Value).ToString());
-            sink.Add(new JsonChange(ChangeKind.Removed, elementPath, kvp.Value.Clone(), null));
+            var elementPath = path.Append(Array.IndexOf(l, kvp.Value).ToString());
+            sink.Add(new JsonChange(ChangeKind.Removed, elementPath.ToPointerString(), kvp.Value.Clone(), null));
         }
     }
 
     // Report remaining elements in right as added
     foreach (var kvp in rightDict)
     {
-        var elementPath = Join(path, (l.Length + Array.IndexOf(r, kvp.Value)).ToString());
-        sink.Add(new JsonChange(ChangeKind.Added, elementPath, null, kvp.Value.Clone()));
+        var elementPath = path.Append((l.Length + Array.IndexOf(r, kvp.Value)).ToString());
+        sink.Add(new JsonChange(ChangeKind.Added, elementPath.ToPointerString(), null, kvp.Value.Clone()));
     }
 }
 
@@ -429,7 +429,7 @@ private static bool TryGetKey(JsonElement element, string keySelector, out strin
     return false;
 }
 
-private static void HandleArrayShifts(string path, JsonElement[] l, JsonElement[] r, DiffOptions opt, List<JsonChange> sink, int depth)
+private static void HandleArrayShifts(JsonPointer path, JsonElement[] l, JsonElement[] r, DiffOptions opt, List<JsonChange> sink, int depth)
 {
     var shorter = l.Length < r.Length ? l : r;
     var longer = l.Length < r.Length ? r : l;
@@ -453,11 +453,11 @@ private static void HandleArrayShifts(string path, JsonElement[] l, JsonElement[
         var startIndex = shorter.Length;
         for (var i = startIndex; i < longer.Length; i++)
         {
-            var elementPath = Join(path, i.ToString());
+            var elementPath = path.Append(i.ToString());
             if (isAdded)
-                sink.Add(new JsonChange(ChangeKind.Added, elementPath, null, longer[i].Clone()));
+                sink.Add(new JsonChange(ChangeKind.Added, elementPath.ToPointerString(), null, longer[i].Clone()));
             else
-                sink.Add(new JsonChange(ChangeKind.Removed, elementPath, longer[i].Clone(), null));
+                sink.Add(new JsonChange(ChangeKind.Removed, elementPath.ToPointerString(), longer[i].Clone(), null));
         }
         return;
     }
@@ -480,11 +480,11 @@ private static void HandleArrayShifts(string path, JsonElement[] l, JsonElement[
         // Report only the extra elements at the beginning
         for (var i = 0; i < offset; i++)
         {
-            var elementPath = Join(path, i.ToString());
+            var elementPath = path.Append(i.ToString());
             if (isAdded)
-                sink.Add(new JsonChange(ChangeKind.Added, elementPath, null, longer[i].Clone()));
+                sink.Add(new JsonChange(ChangeKind.Added, elementPath.ToPointerString(), null, longer[i].Clone()));
             else
-                sink.Add(new JsonChange(ChangeKind.Removed, elementPath, longer[i].Clone(), null));
+                sink.Add(new JsonChange(ChangeKind.Removed, elementPath.ToPointerString(), longer[i].Clone(), null));
         }
         return;
     }
@@ -492,13 +492,13 @@ private static void HandleArrayShifts(string path, JsonElement[] l, JsonElement[
     // Not a simple shift - fall back to index-by-index comparison
     var common = Math.Min(l.Length, r.Length);
     for (var i = 0; i < common; i++)
-        Walk(Join(path, i.ToString()), l[i], r[i], opt, sink, depth + 1);
+        Walk(path.Append(i.ToString()), l[i], r[i], opt, sink, depth + 1);
 
     for (var i = common; i < l.Length; i++)
-        sink.Add(new JsonChange(ChangeKind.Removed, Join(path, i.ToString()), l[i].Clone(), null));
+        sink.Add(new JsonChange(ChangeKind.Removed, path.Append(i.ToString()).ToPointerString(), l[i].Clone(), null));
 
     for (var i = common; i < r.Length; i++)
-        sink.Add(new JsonChange(ChangeKind.Added, Join(path, i.ToString()), null, r[i].Clone()));
+        sink.Add(new JsonChange(ChangeKind.Added, path.Append(i.ToString()).ToPointerString(), null, r[i].Clone()));
 }
 
 private static bool ElementsEqual(JsonElement a, JsonElement b, DiffOptions opt)
@@ -571,10 +571,4 @@ private static bool ElementsEqual(JsonElement a, JsonElement b, DiffOptions opt)
         return string.Equals(leftRaw, rightRaw, StringComparison.Ordinal);
     }
 
-    private static string Join(string parent, string segment)
-    {
-        // Escape per RFC 6901 so segments with '/' or '~' stay unambiguous.
-        var escaped = segment.Replace("~", "~0").Replace("/", "~1");
-        return parent == "/" ? "/" + escaped : parent + "/" + escaped;
-    }
 }
