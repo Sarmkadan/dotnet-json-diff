@@ -115,6 +115,44 @@ public class DeepEqualsTests
     }
 
     /// <summary>
+    /// Tests that 100 and its scientific-notation form 1e2 are treated as numerically equal.
+    /// </summary>
+    [Fact]
+    public void NumericTolerance_TreatsScientificNotationAsEqual()
+    {
+        Assert.True(JsonDiffer.DeepEquals("{\"a\":100}", "{\"a\":1e2}"));
+        Assert.True(JsonDiffer.DeepEquals("{\"a\":1e2}", "{\"a\":100}"));
+    }
+
+    /// <summary>
+    /// Tests that 0 and -0 are treated as numerically equal.
+    /// </summary>
+    [Fact]
+    public void NumericTolerance_TreatsZeroAndNegativeZeroAsEqual()
+    {
+        Assert.True(JsonDiffer.DeepEquals("{\"a\":0}", "{\"a\":-0}"));
+        Assert.True(JsonDiffer.DeepEquals("{\"a\":-0}", "{\"a\":0}"));
+    }
+
+    /// <summary>
+    /// Tests that a high-precision decimal value (within <see cref="decimal"/> range, but
+    /// beyond what <see cref="double"/> can represent exactly) is compared exactly rather
+    /// than being rounded through <see cref="double"/> precision: a difference beyond
+    /// double's ~15-17 significant digits is still detected, while identical high-precision
+    /// values written in different lexical forms match.
+    /// </summary>
+    [Fact]
+    public void NumericTolerance_ComparesHighPrecisionDecimalsExactly()
+    {
+        const string highPrecision = "{\"a\":12345678901234567890123456789}";
+        const string sameValueDifferentForm = "{\"a\":12345678901234567890123456789.0}";
+        const string differsBeyondDoublePrecision = "{\"a\":12345678901234567890123456780}";
+
+        Assert.True(JsonDiffer.DeepEquals(highPrecision, sameValueDifferentForm));
+        Assert.False(JsonDiffer.DeepEquals(highPrecision, differsBeyondDoublePrecision));
+    }
+
+    /// <summary>
     /// Tests that property name case differences can be ignored when configured.
     /// </summary>
     [Fact]
