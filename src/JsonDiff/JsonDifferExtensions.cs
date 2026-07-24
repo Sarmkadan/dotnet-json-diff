@@ -170,6 +170,40 @@ public static class JsonDifferExtensions
     }
 
     /// <summary>
+    /// Diffs a <see cref="JsonDocument"/> against a <see cref="JsonElement"/>, e.g. an
+    /// already-parsed HTTP response body compared against an in-memory expected fragment.
+    /// </summary>
+    /// <param name="left">The left <see cref="JsonDocument"/>.</param>
+    /// <param name="right">The right <see cref="JsonElement"/>.</param>
+    /// <param name="options">Optional diff options. Uses <see cref="DiffOptions.Default"/> if null.</param>
+    /// <returns>A list of changes between the two JSON documents.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="left"/> or <paramref name="right"/> is null.</exception>
+    public static IReadOnlyList<JsonChange> Diff(this JsonDocument left, JsonElement right, DiffOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(left);
+        ArgumentNullException.ThrowIfNull(right);
+
+        return JsonDiffer.Diff(left.RootElement, right, options);
+    }
+
+    /// <summary>
+    /// Diffs a <see cref="JsonElement"/> against a <see cref="JsonDocument"/>, e.g. an
+    /// in-memory expected fragment compared against an already-parsed HTTP response body.
+    /// </summary>
+    /// <param name="left">The left <see cref="JsonElement"/>.</param>
+    /// <param name="right">The right <see cref="JsonDocument"/>.</param>
+    /// <param name="options">Optional diff options. Uses <see cref="DiffOptions.Default"/> if null.</param>
+    /// <returns>A list of changes between the two JSON documents.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="left"/> or <paramref name="right"/> is null.</exception>
+    public static IReadOnlyList<JsonChange> Diff(JsonElement left, JsonDocument right, DiffOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(left);
+        ArgumentNullException.ThrowIfNull(right);
+
+        return JsonDiffer.Diff(left, right.RootElement, options);
+    }
+
+    /// <summary>
     /// Determines whether two JSON strings are deeply equal (semantically equivalent).
     /// </summary>
     /// <param name="left">The left JSON string to compare.</param>
@@ -306,6 +340,38 @@ public static class JsonDifferExtensions
 
         using var r = JsonDocument.Parse(rightJson);
         return JsonDiffer.DeepEquals(left, r.RootElement, options);
+    }
+
+    /// <summary>
+    /// Determines whether a <see cref="JsonDocument"/> and a <see cref="JsonElement"/> are deeply equal.
+    /// </summary>
+    /// <param name="left">The left <see cref="JsonDocument"/>.</param>
+    /// <param name="right">The right <see cref="JsonElement"/>.</param>
+    /// <param name="options">Optional diff options. Uses <see cref="DiffOptions.Default"/> if null.</param>
+    /// <returns><c>true</c> if the documents are semantically equal; otherwise, <c>false</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="left"/> or <paramref name="right"/> is null.</exception>
+    public static bool DeepEquals(this JsonDocument left, JsonElement right, DiffOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(left);
+        ArgumentNullException.ThrowIfNull(right);
+
+        return JsonDiffer.DeepEquals(left.RootElement, right, options);
+    }
+
+    /// <summary>
+    /// Determines whether a <see cref="JsonElement"/> and a <see cref="JsonDocument"/> are deeply equal.
+    /// </summary>
+    /// <param name="left">The left <see cref="JsonElement"/>.</param>
+    /// <param name="right">The right <see cref="JsonDocument"/>.</param>
+    /// <param name="options">Optional diff options. Uses <see cref="DiffOptions.Default"/> if null.</param>
+    /// <returns><c>true</c> if the documents are semantically equal; otherwise, <c>false</c>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="left"/> or <paramref name="right"/> is null.</exception>
+    public static bool DeepEquals(JsonElement left, JsonDocument right, DiffOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(left);
+        ArgumentNullException.ThrowIfNull(right);
+
+        return JsonDiffer.DeepEquals(left, right.RootElement, options);
     }
 
     /// <summary>
