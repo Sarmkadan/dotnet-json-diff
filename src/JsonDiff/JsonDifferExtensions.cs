@@ -17,16 +17,23 @@ public static class JsonDifferExtensions
     /// <summary>
     /// Diffs two JSON strings.
     /// </summary>
-    /// <param name="left">The left JSON string to compare.</param>
-    /// <param name="right">The right JSON string to compare.</param>
+    /// <remarks>
+    /// If either JSON string contains duplicate object keys, the last occurrence wins,
+    /// consistent with System.Text.Json's dictionary deserialization behavior.
+    /// </remarks>
+    /// <param name="left">The left JSON string to compare. Must not be null or empty.</param>
+    /// <param name="right">The right JSON string to compare. Must not be null or empty.</param>
     /// <param name="options">Optional diff options. Uses <see cref="DiffOptions.Default"/> if null.</param>
     /// <returns>A list of changes between the two JSON documents.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="left"/> or <paramref name="right"/> is null.</exception>
+    /// <exception cref="ArgumentException"><paramref name="left"/> or <paramref name="right"/> is empty or consists only of whitespace.</exception>
     /// <exception cref="JsonException">Either input is not valid JSON.</exception>
     public static IReadOnlyList<JsonChange> Diff(this string left, string right, DiffOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(left);
         ArgumentNullException.ThrowIfNull(right);
+        ArgumentException.ThrowIfNullOrEmpty(left.Trim(), nameof(left));
+        ArgumentException.ThrowIfNullOrEmpty(right.Trim(), nameof(right));
 
         using var l = JsonDocument.Parse(left);
         using var r = JsonDocument.Parse(right);
@@ -120,16 +127,18 @@ public static class JsonDifferExtensions
     /// <summary>
     /// Diffs a JSON string against a <see cref="JsonElement"/>.
     /// </summary>
-    /// <param name="leftJson">The left JSON string.</param>
+    /// <param name="leftJson">The left JSON string. Must not be null or empty.</param>
     /// <param name="right">The right <see cref="JsonElement"/>.</param>
     /// <param name="options">Optional diff options. Uses <see cref="DiffOptions.Default"/> if null.</param>
     /// <returns>A list of changes between the two JSON documents.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="leftJson"/> or <paramref name="right"/> is null.</exception>
+    /// <exception cref="ArgumentException"><paramref name="leftJson"/> is empty or consists only of whitespace.</exception>
     /// <exception cref="JsonException">Left input is not valid JSON.</exception>
     public static IReadOnlyList<JsonChange> Diff(this string leftJson, JsonElement right, DiffOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(leftJson);
         ArgumentNullException.ThrowIfNull(right);
+        ArgumentException.ThrowIfNullOrEmpty(leftJson.Trim(), nameof(leftJson));
 
         using var l = JsonDocument.Parse(leftJson);
         return JsonDiffer.Diff(l.RootElement, right, options);
@@ -139,15 +148,17 @@ public static class JsonDifferExtensions
     /// Diffs a <see cref="JsonElement"/> against a JSON string.
     /// </summary>
     /// <param name="left">The left <see cref="JsonElement"/>.</param>
-    /// <param name="rightJson">The right JSON string.</param>
+    /// <param name="rightJson">The right JSON string. Must not be null or empty.</param>
     /// <param name="options">Optional diff options. Uses <see cref="DiffOptions.Default"/> if null.</param>
     /// <returns>A list of changes between the two JSON documents.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="left"/> or <paramref name="rightJson"/> is null.</exception>
+    /// <exception cref="ArgumentException"><paramref name="rightJson"/> is empty or consists only of whitespace.</exception>
     /// <exception cref="JsonException">Right input is not valid JSON.</exception>
     public static IReadOnlyList<JsonChange> Diff(JsonElement left, string rightJson, DiffOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(left);
         ArgumentNullException.ThrowIfNull(rightJson);
+        ArgumentException.ThrowIfNullOrEmpty(rightJson.Trim(), nameof(rightJson));
 
         using var r = JsonDocument.Parse(rightJson);
         return JsonDiffer.Diff(left, r.RootElement, options);
@@ -206,16 +217,23 @@ public static class JsonDifferExtensions
     /// <summary>
     /// Determines whether two JSON strings are deeply equal (semantically equivalent).
     /// </summary>
-    /// <param name="left">The left JSON string to compare.</param>
-    /// <param name="right">The right JSON string to compare.</param>
+    /// <remarks>
+    /// If either JSON string contains duplicate object keys, the last occurrence wins,
+    /// consistent with System.Text.Json's dictionary deserialization behavior.
+    /// </remarks>
+    /// <param name="left">The left JSON string to compare. Must not be null or empty.</param>
+    /// <param name="right">The right JSON string to compare. Must not be null or empty.</param>
     /// <param name="options">Optional diff options. Uses <see cref="DiffOptions.Default"/> if null.</param>
     /// <returns><c>true</c> if the documents are semantically equal; otherwise, <c>false</c>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="left"/> or <paramref name="right"/> is null.</exception>
+    /// <exception cref="ArgumentException"><paramref name="left"/> or <paramref name="right"/> is empty or consists only of whitespace.</exception>
     /// <exception cref="JsonException">Either input is not valid JSON.</exception>
     public static bool DeepEquals(this string left, string right, DiffOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(left);
         ArgumentNullException.ThrowIfNull(right);
+        ArgumentException.ThrowIfNullOrEmpty(left.Trim(), nameof(left));
+        ArgumentException.ThrowIfNullOrEmpty(right.Trim(), nameof(right));
 
         using var l = JsonDocument.Parse(left);
         using var r = JsonDocument.Parse(right);
@@ -309,16 +327,18 @@ public static class JsonDifferExtensions
     /// <summary>
     /// Determines whether a JSON string and a <see cref="JsonElement"/> are deeply equal.
     /// </summary>
-    /// <param name="leftJson">The left JSON string.</param>
+    /// <param name="leftJson">The left JSON string. Must not be null or empty.</param>
     /// <param name="right">The right <see cref="JsonElement"/>.</param>
     /// <param name="options">Optional diff options. Uses <see cref="DiffOptions.Default"/> if null.</param>
     /// <returns><c>true</c> if the documents are semantically equal; otherwise, <c>false</c>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="leftJson"/> or <paramref name="right"/> is null.</exception>
+    /// <exception cref="ArgumentException"><paramref name="leftJson"/> is empty or consists only of whitespace.</exception>
     /// <exception cref="JsonException">Left input is not valid JSON.</exception>
     public static bool DeepEquals(this string leftJson, JsonElement right, DiffOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(leftJson);
         ArgumentNullException.ThrowIfNull(right);
+        ArgumentException.ThrowIfNullOrEmpty(leftJson.Trim(), nameof(leftJson));
 
         using var l = JsonDocument.Parse(leftJson);
         return JsonDiffer.DeepEquals(l.RootElement, right, options);
@@ -328,15 +348,17 @@ public static class JsonDifferExtensions
     /// Determines whether a <see cref="JsonElement"/> and a JSON string are deeply equal.
     /// </summary>
     /// <param name="left">The left <see cref="JsonElement"/>.</param>
-    /// <param name="rightJson">The right JSON string.</param>
+    /// <param name="rightJson">The right JSON string. Must not be null or empty.</param>
     /// <param name="options">Optional diff options. Uses <see cref="DiffOptions.Default"/> if null.</param>
     /// <returns><c>true</c> if the documents are semantically equal; otherwise, <c>false</c>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="left"/> or <paramref name="rightJson"/> is null.</exception>
+    /// <exception cref="ArgumentException"><paramref name="rightJson"/> is empty or consists only of whitespace.</exception>
     /// <exception cref="JsonException">Right input is not valid JSON.</exception>
     public static bool DeepEquals(JsonElement left, string rightJson, DiffOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(left);
         ArgumentNullException.ThrowIfNull(rightJson);
+        ArgumentException.ThrowIfNullOrEmpty(rightJson.Trim(), nameof(rightJson));
 
         using var r = JsonDocument.Parse(rightJson);
         return JsonDiffer.DeepEquals(left, r.RootElement, options);
