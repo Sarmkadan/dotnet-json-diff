@@ -13,8 +13,11 @@ public static class JsonPatchFormatter
     /// </summary>
     /// <param name="changes">The list of changes to format.</param>
     /// <returns>A JSON string representing the patch operations.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="changes"/> is <c>null</c>.</exception>
     public static string ToJsonPatch(IReadOnlyList<JsonChange> changes)
     {
+        ArgumentNullException.ThrowIfNull(changes);
+
         using var stream = new MemoryStream();
         using var writer = new Utf8JsonWriter(stream);
 
