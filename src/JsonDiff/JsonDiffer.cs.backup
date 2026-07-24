@@ -24,23 +24,16 @@ public static class JsonDiffer
 		/// <param name="right">The right JSON string to compare. Must not be null.</param>
 		/// <param name="options">Optional diff options. Uses <see cref="DiffOptions.Default"/> if null.</param>
 		/// <returns>A list of changes between the two JSON documents.</returns>
-    /// <exception cref="JsonDiffException">Either input is not valid JSON.</exception>
+    /// <exception cref="JsonException">Either input is not valid JSON.</exception>
     /// <exception cref="JsonDiffLimitExceededException">Input exceeds configured limits (depth or node count).</exception>
     public static IReadOnlyList<JsonChange> Diff(string left, string right, DiffOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(left);
         ArgumentNullException.ThrowIfNull(right);
 
-        try
-        {
-            using var l = JsonDocument.Parse(left);
-            using var r = JsonDocument.Parse(right);
-            return Diff(l.RootElement, r.RootElement, options);
-        }
-        catch (JsonException ex)
-        {
-            throw new JsonDiffException("Either input is not valid JSON.", ex);
-        }
+        using var l = JsonDocument.Parse(left);
+        using var r = JsonDocument.Parse(right);
+        return Diff(l.RootElement, r.RootElement, options);
     }
 
     /// <summary>
@@ -86,23 +79,16 @@ public static class JsonDiffer
 		/// <param name="right">The right JSON string to compare. Must not be null or empty.</param>
 		/// <param name="options">Optional diff options. Uses <see cref="DiffOptions.Default"/> if null.</param>
 		/// <returns><c>true</c> if the documents are semantically equal; otherwise, <c>false</c>.</returns>
-    /// <exception cref="JsonDiffException">Either input is not valid JSON.</exception>
+    /// <exception cref="JsonException">Either input is not valid JSON.</exception>
     /// <exception cref="JsonDiffLimitExceededException">Input exceeds configured limits (depth or node count).</exception>
     public static bool DeepEquals(string left, string right, DiffOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(left);
         ArgumentNullException.ThrowIfNull(right);
 
-        try
-        {
-            using var l = JsonDocument.Parse(left);
-            using var r = JsonDocument.Parse(right);
-            return DeepEquals(l.RootElement, r.RootElement, options);
-        }
-        catch (JsonException ex)
-        {
-            throw new JsonDiffException("Either input is not valid JSON.", ex);
-        }
+        using var l = JsonDocument.Parse(left);
+        using var r = JsonDocument.Parse(right);
+        return DeepEquals(l.RootElement, r.RootElement, options);
     }
 
     /// <summary>

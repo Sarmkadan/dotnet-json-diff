@@ -27,7 +27,7 @@ public static class JsonDifferExtensions
     /// <returns>A list of changes between the two JSON documents.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="left"/> or <paramref name="right"/> is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="left"/> or <paramref name="right"/> is empty or consists only of whitespace.</exception>
-    /// <exception cref="JsonException">Either input is not valid JSON.</exception>
+    /// <exception cref="JsonDiffException">Either input is not valid JSON.</exception>
     public static IReadOnlyList<JsonChange> Diff(this string left, string right, DiffOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(left);
@@ -35,9 +35,16 @@ public static class JsonDifferExtensions
         ArgumentException.ThrowIfNullOrEmpty(left.Trim(), nameof(left));
         ArgumentException.ThrowIfNullOrEmpty(right.Trim(), nameof(right));
 
-        using var l = JsonDocument.Parse(left);
-        using var r = JsonDocument.Parse(right);
-        return JsonDiffer.Diff(l.RootElement, r.RootElement, options);
+        try
+        {
+            using var l = JsonDocument.Parse(left);
+            using var r = JsonDocument.Parse(right);
+            return JsonDiffer.Diff(l.RootElement, r.RootElement, options);
+        }
+        catch (JsonException ex)
+        {
+            throw new JsonDiffException("Either input is not valid JSON.", ex);
+        }
     }
 
     /// <summary>
@@ -48,7 +55,7 @@ public static class JsonDifferExtensions
     /// <param name="options">Optional diff options. Uses <see cref="DiffOptions.Default"/> if null.</param>
     /// <returns>A list of changes between the two JSON documents.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="leftUtf8"/> or <paramref name="rightUtf8"/> is null.</exception>
-    /// <exception cref="JsonException">Either input is not valid JSON.</exception>
+    /// <exception cref="JsonDiffException">Either input is not valid JSON.</exception>
     public static IReadOnlyList<JsonChange> Diff(ReadOnlySpan<byte> leftUtf8, ReadOnlySpan<byte> rightUtf8, DiffOptions? options = null)
     {
         if (leftUtf8.IsEmpty && rightUtf8.IsEmpty)
@@ -71,7 +78,7 @@ public static class JsonDifferExtensions
     /// <param name="options">Optional diff options. Uses <see cref="DiffOptions.Default"/> if null.</param>
     /// <returns>A list of changes between the two JSON documents.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="leftStream"/> or <paramref name="rightStream"/> is null.</exception>
-    /// <exception cref="JsonException">Either input is not valid JSON.</exception>
+    /// <exception cref="JsonDiffException">Either input is not valid JSON.</exception>
     /// <exception cref="IOException">Error reading from stream.</exception>
     public static IReadOnlyList<JsonChange> Diff(Stream leftStream, Stream rightStream, DiffOptions? options = null)
     {
@@ -93,7 +100,7 @@ public static class JsonDifferExtensions
     /// <param name="cancellationToken">A token to cancel the asynchronous read/parse operations.</param>
     /// <returns>A task producing a list of changes between the two JSON documents.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="leftStream"/> or <paramref name="rightStream"/> is null.</exception>
-    /// <exception cref="JsonException">Either input is not valid JSON.</exception>
+    /// <exception cref="JsonDiffException">Either input is not valid JSON.</exception>
     /// <exception cref="IOException">Error reading from stream.</exception>
     /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>
     public static async Task<IReadOnlyList<JsonChange>> DiffAsync(Stream leftStream, Stream rightStream, DiffOptions? options = null, CancellationToken cancellationToken = default)
@@ -133,7 +140,7 @@ public static class JsonDifferExtensions
     /// <returns>A list of changes between the two JSON documents.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="leftJson"/> or <paramref name="right"/> is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="leftJson"/> is empty or consists only of whitespace.</exception>
-    /// <exception cref="JsonException">Left input is not valid JSON.</exception>
+    /// <exception cref="JsonDiffException">Left input is not valid JSON.</exception>
     public static IReadOnlyList<JsonChange> Diff(this string leftJson, JsonElement right, DiffOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(leftJson);
@@ -153,7 +160,7 @@ public static class JsonDifferExtensions
     /// <returns>A list of changes between the two JSON documents.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="left"/> or <paramref name="rightJson"/> is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="rightJson"/> is empty or consists only of whitespace.</exception>
-    /// <exception cref="JsonException">Right input is not valid JSON.</exception>
+    /// <exception cref="JsonDiffException">Right input is not valid JSON.</exception>
     public static IReadOnlyList<JsonChange> Diff(JsonElement left, string rightJson, DiffOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(left);
@@ -227,7 +234,7 @@ public static class JsonDifferExtensions
     /// <returns><c>true</c> if the documents are semantically equal; otherwise, <c>false</c>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="left"/> or <paramref name="right"/> is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="left"/> or <paramref name="right"/> is empty or consists only of whitespace.</exception>
-    /// <exception cref="JsonException">Either input is not valid JSON.</exception>
+    /// <exception cref="JsonDiffException">Either input is not valid JSON.</exception>
     public static bool DeepEquals(this string left, string right, DiffOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(left);
@@ -248,7 +255,7 @@ public static class JsonDifferExtensions
     /// <param name="options">Optional diff options. Uses <see cref="DiffOptions.Default"/> if null.</param>
     /// <returns><c>true</c> if the documents are semantically equal; otherwise, <c>false</c>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="leftUtf8"/> or <paramref name="rightUtf8"/> is null.</exception>
-    /// <exception cref="JsonException">Either input is not valid JSON.</exception>
+    /// <exception cref="JsonDiffException">Either input is not valid JSON.</exception>
     public static bool DeepEquals(ReadOnlySpan<byte> leftUtf8, ReadOnlySpan<byte> rightUtf8, DiffOptions? options = null)
     {
         if (leftUtf8.IsEmpty && rightUtf8.IsEmpty)
@@ -271,7 +278,7 @@ public static class JsonDifferExtensions
     /// <param name="options">Optional diff options. Uses <see cref="DiffOptions.Default"/> if null.</param>
     /// <returns><c>true</c> if the documents are semantically equal; otherwise, <c>false</c>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="leftStream"/> or <paramref name="rightStream"/> is null.</exception>
-    /// <exception cref="JsonException">Either input is not valid JSON.</exception>
+    /// <exception cref="JsonDiffException">Either input is not valid JSON.</exception>
     /// <exception cref="IOException">Error reading from stream.</exception>
     public static bool DeepEquals(Stream leftStream, Stream rightStream, DiffOptions? options = null)
     {
@@ -293,7 +300,7 @@ public static class JsonDifferExtensions
     /// <param name="cancellationToken">A token to cancel the asynchronous read/parse operations.</param>
     /// <returns>A task producing <c>true</c> if the documents are semantically equal; otherwise, <c>false</c>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="leftStream"/> or <paramref name="rightStream"/> is null.</exception>
-    /// <exception cref="JsonException">Either input is not valid JSON.</exception>
+    /// <exception cref="JsonDiffException">Either input is not valid JSON.</exception>
     /// <exception cref="IOException">Error reading from stream.</exception>
     /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>
     public static async Task<bool> DeepEqualsAsync(Stream leftStream, Stream rightStream, DiffOptions? options = null, CancellationToken cancellationToken = default)
@@ -333,7 +340,7 @@ public static class JsonDifferExtensions
     /// <returns><c>true</c> if the documents are semantically equal; otherwise, <c>false</c>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="leftJson"/> or <paramref name="right"/> is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="leftJson"/> is empty or consists only of whitespace.</exception>
-    /// <exception cref="JsonException">Left input is not valid JSON.</exception>
+    /// <exception cref="JsonDiffException">Left input is not valid JSON.</exception>
     public static bool DeepEquals(this string leftJson, JsonElement right, DiffOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(leftJson);
@@ -353,7 +360,7 @@ public static class JsonDifferExtensions
     /// <returns><c>true</c> if the documents are semantically equal; otherwise, <c>false</c>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="left"/> or <paramref name="rightJson"/> is null.</exception>
     /// <exception cref="ArgumentException"><paramref name="rightJson"/> is empty or consists only of whitespace.</exception>
-    /// <exception cref="JsonException">Right input is not valid JSON.</exception>
+    /// <exception cref="JsonDiffException">Right input is not valid JSON.</exception>
     public static bool DeepEquals(JsonElement left, string rightJson, DiffOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(left);
