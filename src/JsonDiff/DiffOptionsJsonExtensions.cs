@@ -27,7 +27,7 @@ public static class DiffOptionsJsonExtensions
     /// <summary>
     /// Serializes the <see cref="DiffOptions"/> instance to a JSON string.
     /// </summary>
-    /// <param name="value">The options to serialize.</param>
+    /// <param name="value">The options to serialize. Must not be null.</param>
     /// <param name="indented">Whether to format the JSON with indentation.</param>
     /// <returns>A JSON representation of the options.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is <see langword="null"/>.</exception>
@@ -42,7 +42,7 @@ public static class DiffOptionsJsonExtensions
     /// <summary>
     /// Deserializes a <see cref="DiffOptions"/> instance from a JSON string.
     /// </summary>
-    /// <param name="json">The JSON string to deserialize.</param>
+    /// <param name="json">The JSON string to deserialize. Must not be null.</param>
     /// <returns>The deserialized options, or <see langword="null"/> if the JSON is empty or whitespace.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is <see langword="null"/>.</exception>
     /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
@@ -61,7 +61,7 @@ public static class DiffOptionsJsonExtensions
     /// <summary>
     /// Attempts to deserialize a <see cref="DiffOptions"/> instance from a JSON string.
     /// </summary>
-    /// <param name="json">The JSON string to deserialize.</param>
+    /// <param name="json">The JSON string to deserialize. Must not be null.</param>
     /// <param name="value">Receives the deserialized options, or <see langword="null"/> if parsing fails.</param>
     /// <returns><see langword="true"/> if deserialization succeeded; otherwise, <see langword="false"/>.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is <see langword="null"/>.</exception>

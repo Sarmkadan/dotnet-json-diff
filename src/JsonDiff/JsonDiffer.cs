@@ -20,6 +20,10 @@ public static class JsonDiffer
     /// Diffs two raw JSON strings.
     /// </summary>
     /// <exception cref="ArgumentNullException"><paramref name="left"/> or <paramref name="right"/> is null.</exception>
+		/// <param name="left">The left JSON string to compare. Must not be null.</param>
+		/// <param name="right">The right JSON string to compare. Must not be null.</param>
+		/// <param name="options">Optional diff options. Uses <see cref="DiffOptions.Default"/> if null.</param>
+		/// <returns>A list of changes between the two JSON documents.</returns>
     /// <exception cref="JsonException">Either input is not valid JSON.</exception>
     /// <exception cref="JsonDiffLimitExceededException">Input exceeds configured limits (depth or node count).</exception>
     public static IReadOnlyList<JsonChange> Diff(string left, string right, DiffOptions? options = null)
@@ -36,6 +40,10 @@ public static class JsonDiffer
     /// Diffs two already-parsed <see cref="JsonElement"/> values.
     /// </summary>
     /// <exception cref="JsonDiffLimitExceededException">Input exceeds configured limits (depth or node count).</exception>
+		/// <param name="left">The left <see cref="JsonElement"/> to compare. Must not be null.</param>
+		/// <param name="right">The right <see cref="JsonElement"/> to compare. Must not be null.</param>
+		/// <param name="options">Optional diff options. Uses <see cref="DiffOptions.Default"/> if null.</param>
+		/// <returns>A list of changes between the two JSON documents.</returns>
     public static IReadOnlyList<JsonChange> Diff(JsonElement left, JsonElement right, DiffOptions? options = null)
     {
         options ??= DiffOptions.Default;
@@ -67,6 +75,10 @@ public static class JsonDiffer
     /// according to the provided options (e.g., numeric tolerance, property case sensitivity). This is a short-circuiting operation that returns at the first difference found.
     /// </summary>
     /// <exception cref="ArgumentNullException"><paramref name="left"/> or <paramref name="right"/> is null.</exception>
+		/// <param name="left">The left JSON string to compare. Must not be null or empty.</param>
+		/// <param name="right">The right JSON string to compare. Must not be null or empty.</param>
+		/// <param name="options">Optional diff options. Uses <see cref="DiffOptions.Default"/> if null.</param>
+		/// <returns><c>true</c> if the documents are semantically equal; otherwise, <c>false</c>.</returns>
     /// <exception cref="JsonException">Either input is not valid JSON.</exception>
     /// <exception cref="JsonDiffLimitExceededException">Input exceeds configured limits (depth or node count).</exception>
     public static bool DeepEquals(string left, string right, DiffOptions? options = null)
@@ -85,6 +97,10 @@ public static class JsonDiffer
     /// according to the provided options (e.g., numeric tolerance, property case sensitivity). This is a short-circuiting operation that returns at the first difference found.
     /// </summary>
     /// <exception cref="JsonDiffLimitExceededException">Input exceeds configured limits (depth or node count).</exception>
+		/// <param name="left">The left <see cref="JsonElement"/> to compare. Must not be null.</param>
+		/// <param name="right">The right <see cref="JsonElement"/> to compare. Must not be null.</param>
+		/// <param name="options">Optional diff options. Uses <see cref="DiffOptions.Default"/> if null.</param>
+		/// <returns><c>true</c> if the elements are semantically equal; otherwise, <c>false</c>.</returns>
     public static bool DeepEquals(JsonElement left, JsonElement right, DiffOptions? options = null)
     {
         options ??= DiffOptions.Default;
