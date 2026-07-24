@@ -130,5 +130,19 @@ public sealed class DiffOptions
     /// </remarks>
     public int? MaxChanges { get; init; }
 
+    /// <summary>
+    /// Maximum total number of JSON nodes (objects, arrays, values) to traverse during diff operations.
+    /// This includes all nested objects, arrays, and primitive values.
+    /// When <c>null</c>, no limit is applied (unlimited nodes).
+    /// Defaults to <c>100000</c> (100k nodes) to prevent DoS from untrusted JSON documents.
+    /// </summary>
+    /// <remarks>
+    /// A single JSON document can contain a very large number of nodes when it has many properties
+    /// or elements. For example, an object with 50,000 properties or an array with 50,000 elements
+    /// would exceed this limit. This protects against memory exhaustion attacks from wide documents.
+    /// When the limit is exceeded, a <see cref="JsonDiffLimitExceededException"/> is thrown.
+    /// </remarks>
+    public int? MaxNodeCount { get; init; } = 100_000;
+
     internal static readonly DiffOptions Default = new();
 }

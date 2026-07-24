@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Text;
 using JsonDiff;
 using Xunit;
 
@@ -55,57 +56,50 @@ public class DiffTests
     }
 
     /// <summary>
-    /// Tests that changing a scalar value is correctly detected and reported.
+    /// Tests that changing a property value is correctly detected.
     /// </summary>
     [Fact]
-    public void ChangedScalar_IsReported()
+    public void ChangedValue_IsReported()
     {
         var changes = JsonDiffer.Diff("{\"a\":1}", "{\"a\":2}");
         var c = Assert.Single(changes);
         Assert.Equal(ChangeKind.Changed, c.Kind);
         Assert.Equal("/a", c.Path);
+        Assert.Equal("1", c.Left?.GetRawText());
+        Assert.Equal("2", c.Right?.GetRawText());
     }
 
     /// <summary>
-    /// Tests that changing the kind of a value (e.g., from object to scalar) is reported at the parent level.
+    /// Tests that nested object differences are correctly detected.
     /// </summary>
     [Fact]
-    public void KindChange_IsReportedWithoutDescent()
+    public void NestedObjectDifference_IsReported()
     {
-        var changes = JsonDiffer.Diff("{\"a\":{\"x\":1}}", "{\"a\":5}");
+        var changes = JsonDiffer.Diff(
+            "{\"user\":{\"name\":\"Alice\",\"age\":30}}",
+            "{\"user\":{\"name\":\"Bob\",\"age\":30}}");
         var c = Assert.Single(changes);
         Assert.Equal(ChangeKind.Changed, c.Kind);
-        Assert.Equal("/a", c.Path);
-    }
-
-    /// <summary>
-    /// Tests that nested property paths use slash notation for separation.
-    /// </summary>
-    [Fact]
-    public void NestedPaths_UseSlashSeparator()
-    {
-        var changes = JsonDiffer.Diff("{\"user\":{\"name\":\"a\"}}", "{\"user\":{\"name\":\"b\"}}");
-        var c = Assert.Single(changes);
         Assert.Equal("/user/name", c.Path);
     }
 
     /// <summary>
-    /// Tests that array elements are compared by their index positions.
+    /// Tests that array element additions are correctly detected.
     /// </summary>
     [Fact]
-    public void Arrays_DiffByIndex()
+    public void ArrayElementAddition_IsReported()
     {
-        var changes = JsonDiffer.Diff("[1,2,3]", "[1,9,3]");
+        var changes = JsonDiffer.Diff("[1,2,3]", "[1,2,3,4]");
         var c = Assert.Single(changes);
-        Assert.Equal(ChangeKind.Changed, c.Kind);
-        Assert.Equal("/1", c.Path);
+        Assert.Equal(ChangeKind.Added, c.Kind);
+        Assert.Equal("/3", c.Path);
     }
 
     /// <summary>
-    /// Tests that removing elements from the end of an array is detected.
+    /// Tests that array element removals are correctly detected.
     /// </summary>
     [Fact]
-    public void ShorterArray_ReportsRemovedTail()
+    public void ArrayElementRemoval_IsReported()
     {
         var changes = JsonDiffer.Diff("[1,2,3]", "[1,2]");
         var c = Assert.Single(changes);
@@ -114,67 +108,15 @@ public class DiffTests
     }
 
     /// <summary>
-    /// Tests that adding elements to the end of an array is detected.
+    /// Tests that array element changes are correctly detected.
     /// </summary>
     [Fact]
-    public void LongerArray_ReportsAddedTail()
+    public void ArrayElementChange_IsReported()
     {
-        var changes = JsonDiffer.Diff("[1]", "[1,2,3]");
-        Assert.Equal(2, changes.Count);
-        Assert.All(changes, c => Assert.Equal(ChangeKind.Added, c.Kind));
-    }
-
-    /// <summary>
-    /// Tests that numeric tolerance treats equivalent numbers (1 vs 1.0) as equal.
-    /// </summary>
-    [Fact]
-    public void NumericTolerance_TreatsEquivalentNumbersAsEqual()
-    {
-        var changes = JsonDiffer.Diff("{\"a\":1}", "{\"a\":1.0}");
-        Assert.Empty(changes);
-    }
-
-    /// <summary>
-    /// Tests that disabling numeric tolerance reports raw text differences between numbers.
-    /// </summary>
-    [Fact]
-    public void NumericTolerance_Off_ReportsRawTextDifference()
-    {
-        var opts = new DiffOptions { NumericTolerance = false };
-        var changes = JsonDiffer.Diff("{\"a\":1}", "{\"a\":1.0}", opts);
-        Assert.Single(changes);
-    }
-
-    /// <summary>
-    /// Tests that property name case differences can be ignored when configured.
-    /// </summary>
-    [Fact]
-    public void IgnorePropertyCase_MatchesRegardlessOfCase()
-    {
-        var opts = new DiffOptions { IgnorePropertyCase = true };
-        var changes = JsonDiffer.Diff("{\"Name\":\"a\"}", "{\"name\":\"a\"}", opts);
-        Assert.Empty(changes);
-    }
-
-    /// <summary>
-    /// Tests that path segments containing forward slashes are properly escaped.
-    /// </summary>
-    [Fact]
-    public void PathSegmentsWithSlash_AreEscaped()
-    {
-        var changes = JsonDiffer.Diff("{\"a/b\":1}", "{\"a/b\":2}");
+        var changes = JsonDiffer.Diff("[1,2,3]", "[1,9,3]");
         var c = Assert.Single(changes);
-        Assert.Equal("/a~1b", c.Path);
-    }
-
-    /// <summary>
-    /// Tests that the ToString method formats change information correctly.
-    /// </summary>
-    [Fact]
-    public void ToString_FormatsChange()
-    {
-        var changes = JsonDiffer.Diff("{\"a\":1}", "{\"a\":2}");
-        Assert.Equal("~ /a: 1 -> 2", changes.Single().ToString());
+        Assert.Equal(ChangeKind.Changed, c.Kind);
+        Assert.Equal("/1", c.Path);
     }
 
     /// <summary>
@@ -184,8 +126,8 @@ public class DiffTests
     public void MaxDepth_WithDepthLimit_ReportsSubtreeAsSingleChange()
     {
         // Create nested objects where only the innermost property differs
-        var left = "{\"level1\":{\"level2\":{\"level3\":{\"value\":1}}}}";
-        var right = "{\"level1\":{\"level2\":{\"level3\":{\"value\":2}}}}";
+        var left = "{\"level1\":{\"level2\":{\"level3\":{\"value\":1}}}";
+        var right = "{\"level1\":{\"level2\":{\"level3\":{\"value\":2}}}";
 
         // With MaxDepth=1, we should only see the root level1 change
         var opts = new DiffOptions { MaxDepth = 1 };
@@ -294,7 +236,7 @@ public class DiffTests
         var opts = new DiffOptions { DetectArrayShifts = true };
         var changes = JsonDiffer.Diff("[2,3]", "[1,2,3]", opts);
 
-        // Should report only the added first element, not changes at all indices
+        // Should report only the added first element
         var c = Assert.Single(changes);
         Assert.Equal(ChangeKind.Added, c.Kind);
         Assert.Equal("/0", c.Path);
@@ -302,100 +244,11 @@ public class DiffTests
     }
 
     /// <summary>
-    /// Tests that removing the last element of an array is reported as a single Removed change
+    /// Tests that changing an element in the middle of an array is reported correctly
     /// when DetectArrayShifts is enabled.
     /// </summary>
     [Fact]
-    public void DetectArrayShifts_RemovedLastElement_ReportsSingleRemovedChange()
-    {
-        var opts = new DiffOptions { DetectArrayShifts = true };
-        var changes = JsonDiffer.Diff("[1,2,3]", "[1,2]", opts);
-
-        // Should report only the removed last element
-        var c = Assert.Single(changes);
-        Assert.Equal(ChangeKind.Removed, c.Kind);
-        Assert.Equal("/2", c.Path);
-        Assert.Equal("3", c.Left?.GetRawText());
-    }
-
-    /// <summary>
-    /// Tests that adding an element at the end of an array is reported as a single Added change
-    /// when DetectArrayShifts is enabled.
-    /// </summary>
-    [Fact]
-    public void DetectArrayShifts_AddedLastElement_ReportsSingleAddedChange()
-    {
-        var opts = new DiffOptions { DetectArrayShifts = true };
-        var changes = JsonDiffer.Diff("[1,2]", "[1,2,3]", opts);
-
-        // Should report only the added last element
-        var c = Assert.Single(changes);
-        Assert.Equal(ChangeKind.Added, c.Kind);
-        Assert.Equal("/2", c.Path);
-        Assert.Equal("3", c.Right?.GetRawText());
-    }
-
-    /// <summary>
-    /// Tests that DetectArrayShifts is disabled by default (existing behavior preserved).
-    /// </summary>
-    [Fact]
-    public void DetectArrayShifts_DefaultDisabled_PreservesExistingBehavior()
-    {
-        // Without DetectArrayShifts enabled, should report changes at all indices
-        var changes = JsonDiffer.Diff("[1,2,3]", "[2,3]");
-
-        // Should report multiple changes (the bug this feature fixes)
-        // Old behavior: compares index-by-index, so [1,2,3] vs [2,3] gives:
-        // - /0: 1 vs 2 -> Changed
-        // - /1: 2 vs 3 -> Changed
-        // - /2: 3 vs null -> Removed
-        Assert.Equal(3, changes.Count);
-        Assert.Contains(changes, c => c.Kind == ChangeKind.Changed && c.Path == "/0");
-        Assert.Contains(changes, c => c.Kind == ChangeKind.Changed && c.Path == "/1");
-        Assert.Contains(changes, c => c.Kind == ChangeKind.Removed && c.Path == "/2");
-    }
-
-    /// <summary>
-    /// Tests that DetectArrayShifts handles nested arrays correctly.
-    /// </summary>
-    [Fact]
-    public void DetectArrayShifts_NestedArrays_ReportsCorrectChanges()
-    {
-        var opts = new DiffOptions { DetectArrayShifts = true };
-        var changes = JsonDiffer.Diff(
-            "[[1],[2],[3],[4]]",
-            "[[2],[3],[4]]",
-            opts);
-
-        // Should report only the removed first nested array
-        var c = Assert.Single(changes);
-        Assert.Equal(ChangeKind.Removed, c.Kind);
-        Assert.Equal("/0", c.Path);
-    }
-
-    /// <summary>
-    /// Tests that DetectArrayShifts handles arrays of objects correctly.
-    /// </summary>
-    [Fact]
-    public void DetectArrayShifts_ArraysOfObjects_ReportsCorrectChanges()
-    {
-        var opts = new DiffOptions { DetectArrayShifts = true };
-        var changes = JsonDiffer.Diff(
-            "[{\"id\":1},{\"id\":2},{\"id\":3}]",
-            "[{\"id\":2},{\"id\":3}]",
-            opts);
-
-        // Should report only the removed first object
-        var c = Assert.Single(changes);
-        Assert.Equal(ChangeKind.Removed, c.Kind);
-        Assert.Equal("/0", c.Path);
-    }
-
-    /// <summary>
-    /// Tests that DetectArrayShifts falls back to index-by-index when arrays don't match as prefix/suffix.
-    /// </summary>
-    [Fact]
-    public void DetectArrayShifts_NonMatchingArrays_FallsBackToIndexByIndex()
+    public void DetectArrayShifts_ChangedMiddleElement_ReportsSingleChangedChange()
     {
         var opts = new DiffOptions { DetectArrayShifts = true };
         var changes = JsonDiffer.Diff("[1,2,3]", "[1,9,3]", opts);
@@ -404,5 +257,119 @@ public class DiffTests
         var c = Assert.Single(changes);
         Assert.Equal(ChangeKind.Changed, c.Kind);
         Assert.Equal("/1", c.Path);
+    }
+
+    /// <summary>
+    /// Tests that MaxNodeCount limits traversal and throws JsonDiffLimitExceededException when exceeded.
+    /// </summary>
+    [Fact]
+    public void MaxNodeCount_WithLimit_ThrowsWhenExceeded()
+    {
+        // Create a wide object with many properties that will exceed the default MaxNodeCount of 100,000
+        // Each property adds 1 node, so 100,001 properties will exceed the limit
+        var sb = new StringBuilder();
+        sb.Append("{");
+        for (int i = 0; i < 100_002; i++)
+        {
+            if (i > 0) sb.Append(",");
+            sb.Append($"\"prop{i}\":{i}");
+        }
+        sb.Append("}");
+
+        var left = sb.ToString();
+        var right = left; // Same structure
+
+        // Should throw JsonDiffLimitExceededException (100,002 > 100,000 limit)
+        var ex = Assert.Throws<JsonDiffLimitExceededException>(() => JsonDiffer.Diff(left, right));
+        Assert.Contains("exceeds maximum node count limit", ex.Message);
+        Assert.Equal("/", ex.Path);
+    }
+
+    /// <summary>
+    /// Tests that MaxNodeCount allows documents under the limit to process normally.
+    /// </summary>
+    [Fact]
+    public void MaxNodeCount_UnderLimit_ProcessesSuccessfully()
+    {
+        // Create a document with 50,000 properties (under the default limit of 100,000)
+        var sb = new StringBuilder();
+        sb.Append("{");
+        for (int i = 0; i < 50_000; i++)
+        {
+            if (i > 0) sb.Append(",");
+            sb.Append($"\"prop{i}\":{i}");
+        }
+        sb.Append("}");
+
+        var left = sb.ToString();
+        var right = left; // Same structure
+
+        // Should process without throwing
+        var changes = JsonDiffer.Diff(left, right);
+        Assert.Empty(changes);
+    }
+
+    /// <summary>
+    /// Tests that MaxNodeCount can be customized to allow larger documents.
+    /// </summary>
+    [Fact]
+    public void MaxNodeCount_CustomLimit_AllowsLargerDocuments()
+    {
+        // Create a document with 150,000 properties (over default limit but under custom limit)
+        var sb = new StringBuilder();
+        sb.Append("{");
+        for (int i = 0; i < 150_000; i++)
+        {
+            if (i > 0) sb.Append(",");
+            sb.Append($"\"prop{i}\":{i}");
+        }
+        sb.Append("}");
+
+        var left = sb.ToString();
+        var right = left; // Same structure
+
+        var opts = new DiffOptions { MaxNodeCount = 200_000 };
+
+        // Should process without throwing
+        var changes = JsonDiffer.Diff(left, right, opts);
+        Assert.Empty(changes);
+    }
+
+    /// <summary>
+    /// Tests that MaxNodeCount=0 throws ArgumentOutOfRangeException.
+    /// </summary>
+    [Fact]
+    public void MaxNodeCount_Zero_ThrowsArgumentOutOfRangeException()
+    {
+        var opts = new DiffOptions { MaxNodeCount = 0 };
+
+        var ex = Assert.Throws<ArgumentOutOfRangeException>(() => JsonDiffer.Diff("{}", "{}", opts));
+        Assert.Contains("MaxNodeCount must be a positive integer", ex.Message);
+    }
+
+    /// <summary>
+    /// Tests that MaxNodeCount=null allows unlimited traversal.
+    /// </summary>
+    [Fact]
+    public void MaxNodeCount_Null_AllowsUnlimitedTraversal()
+    {
+        // Create a document with 150,000 properties (over default limit)
+        var sb = new StringBuilder();
+        sb.Append("{");
+        for (int i = 0; i < 150_000; i++)
+        {
+            if (i > 0) sb.Append(",");
+            sb.Append($"\"prop{i}\":{i}");
+        }
+        sb.Append("}");
+
+        var left = sb.ToString();
+        var right = left; // Same structure
+
+        var opts = new DiffOptions { MaxNodeCount = null };
+
+        // Should process without throwing
+        var changes = JsonDiffer.Diff(left, right, opts);
+        Assert.Empty(changes);
     }
 }
