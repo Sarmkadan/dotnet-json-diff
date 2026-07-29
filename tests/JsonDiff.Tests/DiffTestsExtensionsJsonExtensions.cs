@@ -23,6 +23,7 @@ public static class DiffTestsExtensionsJsonExtensions
     /// <param name="indented">Whether to format the JSON with indentation for readability.</param>
     /// <returns>A JSON string representation of the value.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
+    /// <exception cref="JsonException">An error occurred while serializing the value to JSON.</exception>
     public static string ToJson(this DiffTests value, bool indented = false)
     {
         ArgumentNullException.ThrowIfNull(value);
