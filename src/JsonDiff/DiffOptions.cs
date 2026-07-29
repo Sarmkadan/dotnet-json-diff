@@ -51,7 +51,7 @@ public enum NumberComparison
 /// <summary>
 /// Tunables for a diff run.
 /// </summary>
-public sealed class DiffOptions
+public sealed class DiffOptions : IDiffOptions
 {
     /// <summary>
     /// When <c>true</c>, numbers that are numerically equal but written differently
