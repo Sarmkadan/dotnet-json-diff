@@ -9,6 +9,6 @@ namespace JsonDiff;
 [Obsolete("This class has been renamed to 'JsonDifferExtensions' for clarity. Use JsonDifferExtensions.Diff() and JsonDifferExtensions.DeepEquals() methods instead.")]
 public static class JsonDifferJsonExtensions
 {
-    // This class is obsolete and kept only for backward compatibility.
+    // This class is obsolete and kept only for backward compatibility. All functionality has been moved to JsonDifferExtensions.
     // All functionality has been moved to JsonDifferExtensions.
 }
