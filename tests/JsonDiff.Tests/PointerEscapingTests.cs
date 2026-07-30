@@ -6,7 +6,7 @@ using Xunit;
 
 namespace JsonDiff.Tests
 {
-    public class PointerEscapingTests
+    public class PointerEscapingTests : IPointerEscapingTests
     {
         [Fact]
         public void SlashInPropertyName_IsEscaped()
