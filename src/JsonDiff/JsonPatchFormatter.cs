@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 
@@ -6,7 +8,7 @@ namespace JsonDiff;
 /// <summary>
 /// Formats a list of <see cref="JsonChange"/> objects into a JSON Patch document (RFC 6902).
 /// </summary>
-public static class JsonPatchFormatter
+public class JsonPatchFormatter : IEquatable<JsonPatchFormatter>
 {
     /// <summary>
     /// Renders the changes as a JSON Patch string.
@@ -61,4 +63,31 @@ public static class JsonPatchFormatter
 
         return System.Text.Encoding.UTF8.GetString(stream.ToArray());
     }
+
+    // Equality members – the class has no instance state, so all instances are considered equal.
+
+    public bool Equals(JsonPatchFormatter? other)
+    {
+        // Since the class has no instance fields, any non‑null instance is equal to another.
+        return other is not null;
+    }
+
+    public override bool Equals(object? obj) => obj is JsonPatchFormatter other && Equals(other);
+
+    public override int GetHashCode()
+    {
+        // Use a constant hash code derived from the type; HashCode.Combine works with a single argument.
+        return HashCode.Combine(typeof(JsonPatchFormatter));
+    }
+
+    public static bool operator ==(JsonPatchFormatter? left, JsonPatchFormatter? right)
+    {
+        if (ReferenceEquals(left, right))
+            return true;
+        if (left is null || right is null)
+            return false;
+        return left.Equals(right);
+    }
+
+    public static bool operator !=(JsonPatchFormatter? left, JsonPatchFormatter? right) => !(left == right);
 }
