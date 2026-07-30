@@ -21,15 +21,24 @@ public static class PointerEscapingTestsJsonExtensions
     /// </summary>
     /// <param name="value">The value to serialize.</param>
     /// <param name="indented">Whether to format the JSON with indentation.</param>
+    /// <param name="serializeNull">Whether to serialize null values.</param>
     /// <returns>A JSON string representation of the <see cref="PointerEscapingTests"/> instance.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
-    public static string ToJson(this PointerEscapingTests value, bool indented = false)
+    public static string ToJson(this PointerEscapingTests value, bool indented = false, bool serializeNull = false)
     {
         ArgumentNullException.ThrowIfNull(value);
 
         var options = indented
             ? new JsonSerializerOptions(_jsonOptions) { WriteIndented = true }
             : _jsonOptions;
+
+        if (serializeNull)
+        {
+            options = new JsonSerializerOptions(_jsonOptions)
+            {
+                DefaultIgnoreCondition = JsonIgnoreCondition.Never
+            };
+        }
 
         return JsonSerializer.Serialize(value, options);
     }
