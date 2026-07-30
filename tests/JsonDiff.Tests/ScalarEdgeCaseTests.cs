@@ -125,7 +125,7 @@ namespace JsonDiff.Tests
             Assert.Single(changes);
             var change = changes.SingleChange();
             Assert.Equal(ChangeKind.Changed, change.Kind);
-            Assert.Equal("a", change.Path);
+            Assert.Equal("/a", change.Path);
         }
 
         [Fact]
