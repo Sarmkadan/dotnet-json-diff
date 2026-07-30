@@ -6,7 +6,7 @@ using Xunit;
 
 namespace JsonDiff.Tests
 {
-    public class JsonPatchFormatterTests
+    public class JsonPatchFormatterTests : IJsonPatchFormatterTests
     {
         [Fact]
         public void AddOperation_RendersCorrectly()
