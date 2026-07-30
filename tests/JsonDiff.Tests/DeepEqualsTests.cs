@@ -8,7 +8,7 @@ namespace JsonDiff.Tests;
 /// Test suite for DeepEquals functionality.
 /// Validates that the JsonDiffer.DeepEquals correctly determines semantic equality between JSON documents.
 /// </summary>
-public class DeepEqualsTests
+public class DeepEqualsTests : IDeepEqualsTests
 {
     /// <summary>
     /// Tests that identical JSON documents are considered equal.
