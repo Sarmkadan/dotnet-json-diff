@@ -98,8 +98,8 @@ public class DeepEqualsTests : IDeepEqualsTests
     [Fact]
     public void NumericTolerance_TreatsEquivalentNumbersAsEqual()
     {
-        Assert.True(JsonDiffer.DeepEquals("{\"a\":1}", "{\"a\":1.0}"));
-        Assert.True(JsonDiffer.DeepEquals("{\"a\":1}", "{\"a\":1.00}"));
+        Assert.True(JsonDiffer.DeepEquals("{\"a\":1}", "{\"a\":1.0}", new DiffOptions { NumericTolerance = true }));
+        Assert.True(JsonDiffer.DeepEquals("{\"a\":1}", "{\"a\":1.00}", new DiffOptions { NumericTolerance = true }));
         Assert.True(JsonDiffer.DeepEquals("{\"a\":1e0}", "{\"a\":1}"));
     }
 
@@ -332,7 +332,7 @@ public class DeepEqualsTests : IDeepEqualsTests
     [Fact]
     public void NumericTolerance_VariousFormats_AreEqual()
     {
-        Assert.True(JsonDiffer.DeepEquals("{\"a\":1}", "{\"a\":1.0}"));
+        Assert.True(JsonDiffer.DeepEquals("{\"a\":1}", "{\"a\":1.0}", new DiffOptions { NumericTolerance = true }));
         Assert.True(JsonDiffer.DeepEquals("{\"a\":1}", "{\"a\":1e0}"));
         Assert.True(JsonDiffer.DeepEquals("{\"a\":1.5}", "{\"a\":1.50}"));
         Assert.True(JsonDiffer.DeepEquals("{\"a\":0.001}", "{\"a\":0.0010}"));
