@@ -28,7 +28,8 @@ public static class DiffTestsExtensions
         return changes.FirstOrDefault(c => string.Equals(c.Path, path, StringComparison.Ordinal)) is var change
             && change.Path is not null
                 ? change
-                : throw new InvalidOperationException($"No change found at path '{path}'");
+                : throw new InvalidOperationException(
+                    string.Format(DiffTestsExtensionsConstants.NoChangeFoundMessage, path));
     }
 
     /// <summary>
@@ -44,9 +45,11 @@ public static class DiffTestsExtensions
 
         return changes.ToList() switch
         {
-            [] => throw new InvalidOperationException("Expected exactly one change but found none."),
+            [] => throw new InvalidOperationException(
+                DiffTestsExtensionsConstants.ExpectedExactlyOneChangeNoneMessage),
             [var single] => single,
-            var list => throw new InvalidOperationException($"Expected exactly one change but found {list.Count}.")
+            var list => throw new InvalidOperationException(
+                string.Format(DiffTestsExtensionsConstants.ExpectedExactlyOneChangeCountMessage, list.Count))
         };
     }
 
@@ -64,13 +67,14 @@ public static class DiffTestsExtensions
         var list = changes.ToList();
         if (list.Count == 0)
         {
-            throw new InvalidOperationException("Expected changes but found none.");
+            throw new InvalidOperationException(
+                DiffTestsExtensionsConstants.ExpectedChangesButFoundNoneMessage);
         }
 
         if (list.Any(change => change.Kind != expectedKind))
         {
             throw new InvalidOperationException(
-                $"Expected all changes to have kind '{expectedKind}' but found mismatches.");
+                string.Format(DiffTestsExtensionsConstants.ExpectedAllChangesKindMessage, expectedKind));
         }
     }
 
@@ -110,7 +114,8 @@ public static class DiffTestsExtensions
             {
                 if (!current.TryGetProperty(unescaped, out var property))
                 {
-                    throw new InvalidOperationException($"Property '{unescaped}' not found at path '{path}'");
+                    throw new InvalidOperationException(
+                        string.Format(DiffTestsExtensionsConstants.PropertyNotFoundMessage, unescaped, path));
                 }
 
                 current = property;
@@ -119,19 +124,22 @@ public static class DiffTestsExtensions
             {
                 if (!int.TryParse(unescaped, NumberStyles.None, CultureInfo.InvariantCulture, out var index) || index < 0)
                 {
-                    throw new InvalidOperationException($"Invalid array index '{unescaped}' at path '{path}'");
+                    throw new InvalidOperationException(
+                        string.Format(DiffTestsExtensionsConstants.InvalidArrayIndexMessage, unescaped, path));
                 }
 
                 if (index >= current.GetArrayLength())
                 {
-                    throw new InvalidOperationException($"Array index {index} out of range at path '{path}'");
+                    throw new InvalidOperationException(
+                        string.Format(DiffTestsExtensionsConstants.ArrayIndexOutOfRangeMessage, index, path));
                 }
 
                 current = current[index];
             }
             else
             {
-                throw new InvalidOperationException($"Cannot navigate into non-object/array value at path '{path}'");
+                throw new InvalidOperationException(
+                    string.Format(DiffTestsExtensionsConstants.CannotNavigateMessage, path));
             }
         }
 
