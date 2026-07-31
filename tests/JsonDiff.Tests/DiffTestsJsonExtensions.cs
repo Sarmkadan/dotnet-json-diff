@@ -7,7 +7,7 @@ namespace JsonDiff.Tests;
 /// <summary>
 /// Provides JSON serialization and deserialization extensions for <see cref="DiffTests"/>.
 /// </summary>
-public static class DiffTestsJsonExtensions
+public static class DiffTestsJsonExtensionsConstants
 {
     private static readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web)
     {
