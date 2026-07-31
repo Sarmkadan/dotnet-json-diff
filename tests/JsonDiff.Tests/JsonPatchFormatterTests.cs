@@ -6,7 +6,7 @@ using Xunit;
 
 namespace JsonDiff.Tests
 {
-    public class JsonPatchFormatterTests : IJsonPatchFormatterTests
+    public class JsonPatchFormatterTests : IJsonPatchFormatterTests, IEquatable<JsonPatchFormatterTests>
     {
         [Fact]
         public void AddOperation_RendersCorrectly()
@@ -91,5 +91,31 @@ namespace JsonDiff.Tests
             var second = doc.RootElement[1];
             Assert.Equal("add", second.GetProperty("op").GetString());
         }
+
+        // IEquatable implementation
+        public bool Equals(JsonPatchFormatterTests? other)
+        {
+            // The class has no instance state; all instances are considered equal if the other is not null.
+            return other is not null;
+        }
+
+        public override bool Equals(object? obj) => Equals(obj as JsonPatchFormatterTests);
+
+        public override int GetHashCode()
+        {
+            // No instance fields to hash; use a constant combined hash.
+            return HashCode.Combine(0);
+        }
+
+        public static bool operator ==(JsonPatchFormatterTests? left, JsonPatchFormatterTests? right)
+        {
+            if (ReferenceEquals(left, right))
+                return true;
+            if (left is null || right is null)
+                return false;
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(JsonPatchFormatterTests? left, JsonPatchFormatterTests? right) => !(left == right);
     }
 }
