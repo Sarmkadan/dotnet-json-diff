@@ -1,8 +1,10 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using JsonDiff;
 using Xunit;
+using static JsonDiff.Tests.JsonPatchFormatterTestsConstants;
 
 namespace JsonDiff.Tests
 {
@@ -14,7 +16,7 @@ namespace JsonDiff.Tests
             // Arrange
             var changes = new List<JsonChange>
             {
-                new JsonChange(ChangeKind.Added, "/foo/bar", null, JsonDocument.Parse("\"baz\"").RootElement)
+                new JsonChange(ChangeKind.Added, FooBarPath, null, JsonDocument.Parse("\"baz\"").RootElement)
             };
 
             // Act
@@ -23,9 +25,9 @@ namespace JsonDiff.Tests
             var op = doc.RootElement.EnumerateArray().First();
 
             // Assert
-            Assert.Equal("add", op.GetProperty("op").GetString());
-            Assert.Equal("/foo/bar", op.GetProperty("path").GetString());
-            Assert.Equal("baz", op.GetProperty("value").GetString());
+            Assert.Equal(AddOp, op.GetProperty(OpProperty).GetString());
+            Assert.Equal(FooBarPath, op.GetProperty(PathProperty).GetString());
+            Assert.Equal("baz", op.GetProperty(ValueProperty).GetString());
         }
 
         [Fact]
@@ -34,7 +36,7 @@ namespace JsonDiff.Tests
             // Arrange
             var changes = new List<JsonChange>
             {
-                new JsonChange(ChangeKind.Removed, "/foo/bar", JsonDocument.Parse("\"baz\"").RootElement, null)
+                new JsonChange(ChangeKind.Removed, FooBarPath, JsonDocument.Parse("\"baz\"").RootElement, null)
             };
 
             // Act
@@ -43,9 +45,9 @@ namespace JsonDiff.Tests
             var op = doc.RootElement.EnumerateArray().First();
 
             // Assert
-            Assert.Equal("remove", op.GetProperty("op").GetString());
-            Assert.Equal("/foo/bar", op.GetProperty("path").GetString());
-            Assert.False(op.TryGetProperty("value", out _));
+            Assert.Equal(RemoveOp, op.GetProperty(OpProperty).GetString());
+            Assert.Equal(FooBarPath, op.GetProperty(PathProperty).GetString());
+            Assert.False(op.TryGetProperty(ValueProperty, out _));
         }
 
         [Fact]
@@ -54,7 +56,7 @@ namespace JsonDiff.Tests
             // Arrange
             var changes = new List<JsonChange>
             {
-                new JsonChange(ChangeKind.Changed, "/foo/bar", JsonDocument.Parse("1").RootElement, JsonDocument.Parse("2").RootElement)
+                new JsonChange(ChangeKind.Changed, FooBarPath, JsonDocument.Parse("1").RootElement, JsonDocument.Parse("2").RootElement)
             };
 
             // Act
@@ -63,9 +65,9 @@ namespace JsonDiff.Tests
             var op = doc.RootElement.EnumerateArray().First();
 
             // Assert
-            Assert.Equal("replace", op.GetProperty("op").GetString());
-            Assert.Equal("/foo/bar", op.GetProperty("path").GetString());
-            Assert.Equal(2, op.GetProperty("value").GetInt32());
+            Assert.Equal(ReplaceOp, op.GetProperty(OpProperty).GetString());
+            Assert.Equal(FooBarPath, op.GetProperty(PathProperty).GetString());
+            Assert.Equal(2, op.GetProperty(ValueProperty).GetInt32());
         }
 
         [Fact]
@@ -86,10 +88,10 @@ namespace JsonDiff.Tests
             Assert.Equal(2, doc.RootElement.GetArrayLength());
             
             var first = doc.RootElement[0];
-            Assert.Equal("remove", first.GetProperty("op").GetString());
+            Assert.Equal(RemoveOp, first.GetProperty(OpProperty).GetString());
             
             var second = doc.RootElement[1];
-            Assert.Equal("add", second.GetProperty("op").GetString());
+            Assert.Equal(AddOp, second.GetProperty(OpProperty).GetString());
         }
 
         // IEquatable implementation
