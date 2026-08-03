@@ -1,3 +1,30 @@
+## DeepEqualsTests
+
+The DeepEqualsTests class contains tests for the DeepEquals method, which checks for deep equality between two JSON objects. It verifies that the method correctly handles various scenarios, such as identical documents, key order differences, added or removed properties, and more.
+
+Example usage:
+```csharp
+public void IdenticalDocuments_AreEqual
+public void KeyOrder_IsIgnored
+public void AddedProperty_MakesNotEqual
+public void RemovedProperty_MakesNotEqual
+public void ChangedScalar_MakesNotEqual
+public void KindChange_MakesNotEqual
+public void NestedPropertyDifference_IsDetected
+public void ArrayElementDifference_IsDetected
+public void ArrayLengthDifference_IsDetected
+public void NumericTolerance_TreatsEquivalentNumbersAsEqual
+public void NumericTolerance_Off_ReportsEquivalentNumbersAsDifferent
+public void IgnorePropertyCase_MatchesRegardlessOfCase
+public void PropertyCaseDifference_IsDetected_WhenNotConfigured
+public void NullValues_AreEqual
+public void BooleanValues_AreEqual
+public void StringValues_AreEqual
+public void DeepEquals_JsonElementOverload_WorksCorrectly
+public void DeepEquals_JsonElementOverload_DetectsDifferences
+public void MaxDepth_Limited_AllowsTraversalToDepth2
+public void MaxDepth_WithLimit1_ComparesAtRootLevel
+```
 ## ScalarEdgeCaseTests
 
 ScalarEdgeCaseTests contains tests for edge cases related to scalar values in JSON patches.
