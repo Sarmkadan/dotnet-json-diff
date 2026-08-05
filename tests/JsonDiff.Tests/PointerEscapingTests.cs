@@ -6,8 +6,14 @@ using Xunit;
 
 namespace JsonDiff.Tests
 {
+    /// <summary>
+    /// Tests that JSON pointer escaping is performed correctly by JsonDiffer.
+    /// </summary>
     public class PointerEscapingTests : IPointerEscapingTests
     {
+        /// <summary>
+        /// Verifies that a property name containing a slash is escaped as "~1" in the JSON pointer path.
+        /// </summary>
         [Fact]
         public void SlashInPropertyName_IsEscaped()
         {
@@ -23,6 +29,9 @@ namespace JsonDiff.Tests
             Assert.Equal("/a~1b", change.Path);
         }
 
+        /// <summary>
+        /// Verifies that a property name containing a tilde is escaped as "~0" in the JSON pointer path.
+        /// </summary>
         [Fact]
         public void TildeInPropertyName_IsEscaped()
         {
@@ -38,6 +47,9 @@ namespace JsonDiff.Tests
             Assert.Equal("/x~0y", change.Path);
         }
 
+        /// <summary>
+        /// Verifies that nested property names containing both slash and tilde are escaped correctly and combined in the JSON pointer path.
+        /// </summary>
         [Fact]
         public void NestedEscaping_CombinesEscapesCorrectly()
         {
@@ -53,6 +65,9 @@ namespace JsonDiff.Tests
             Assert.Equal("/obj/a~1b/x~0y", change.Path);
         }
 
+        /// <summary>
+        /// Verifies that a patch generated from changes involving keys with slashes, tildes, and an empty string can be applied cleanly and reproduces the expected JSON document.
+        /// </summary>
         [Fact]
         public void RoundTrip_KeysWithSlashTildeAndEmptyString_PatchAppliesCleanly()
         {
