@@ -8,8 +8,14 @@ using static JsonDiff.Tests.JsonPatchFormatterTestsConstants;
 
 namespace JsonDiff.Tests
 {
+    /// <summary>
+    /// Tests for <see cref="JsonPatchFormatter"/> ensuring that JSON Patch operations are rendered correctly.
+    /// </summary>
     public class JsonPatchFormatterTests : IJsonPatchFormatterTests, IEquatable<JsonPatchFormatterTests>
     {
+        /// <summary>
+        /// Verifies that an added change is rendered as a JSON Patch <c>add</c> operation with the correct path and value.
+        /// </summary>
         [Fact]
         public void AddOperation_RendersCorrectly()
         {
@@ -30,6 +36,9 @@ namespace JsonDiff.Tests
             Assert.Equal("baz", op.GetProperty(ValueProperty).GetString());
         }
 
+        /// <summary>
+        /// Verifies that a removed change is rendered as a JSON Patch <c>remove</c> operation with the correct path and without a value.
+        /// </summary>
         [Fact]
         public void RemoveOperation_RendersCorrectly()
         {
@@ -50,6 +59,9 @@ namespace JsonDiff.Tests
             Assert.False(op.TryGetProperty(ValueProperty, out _));
         }
 
+        /// <summary>
+        /// Verifies that a changed (replaced) value is rendered as a JSON Patch <c>replace</c> operation with the correct path and new value.
+        /// </summary>
         [Fact]
         public void ReplaceOperation_RendersCorrectly()
         {
@@ -70,6 +82,9 @@ namespace JsonDiff.Tests
             Assert.Equal(2, op.GetProperty(ValueProperty).GetInt32());
         }
 
+        /// <summary>
+        /// Verifies that multiple changes are rendered as a JSON array containing the appropriate operations in order.
+        /// </summary>
         [Fact]
         public void MultipleChanges_RendersArray()
         {
@@ -94,21 +109,41 @@ namespace JsonDiff.Tests
             Assert.Equal(AddOp, second.GetProperty(OpProperty).GetString());
         }
 
-        // IEquatable implementation
+        /// <summary>
+        /// Determines whether the specified <see cref="JsonPatchFormatterTests"/> instance is equal to the current instance.
+        /// Since the class has no instance state, any non-null instance is considered equal.
+        /// </summary>
+        /// <param name="other">The other instance to compare.</param>
+        /// <returns>True if <paramref name="other"/> is not null; otherwise false.</returns>
         public bool Equals(JsonPatchFormatterTests? other)
         {
             // The class has no instance state; all instances are considered equal if the other is not null.
             return other is not null;
         }
 
+        /// <summary>
+        /// Determines whether the specified object is equal to the current instance.
+        /// </summary>
+        /// <param name="obj">The object to compare.</param>
+        /// <returns>True if <paramref name="obj"/> is a non-null <see cref="JsonPatchFormatterTests"/>; otherwise false.</returns>
         public override bool Equals(object? obj) => Equals(obj as JsonPatchFormatterTests);
 
+        /// <summary>
+        /// Returns a hash code for the current instance. Since there is no instance state, a constant hash is returned.
+        /// </summary>
+        /// <returns>A hash code.</returns>
         public override int GetHashCode()
         {
             // No instance fields to hash; use a constant combined hash.
             return HashCode.Combine(0);
         }
 
+        /// <summary>
+        /// Determines whether two <see cref="JsonPatchFormatterTests"/> instances are equal.
+        /// </summary>
+        /// <param name="left">The left-hand operand.</param>
+        /// <param name="right">The right-hand operand.</param>
+        /// <returns>True if both refer to the same instance or both are non-null; otherwise false.</returns>
         public static bool operator ==(JsonPatchFormatterTests? left, JsonPatchFormatterTests? right)
         {
             if (ReferenceEquals(left, right))
@@ -118,6 +153,12 @@ namespace JsonDiff.Tests
             return left.Equals(right);
         }
 
+        /// <summary>
+        /// Determines whether two <see cref="JsonPatchFormatterTests"/> instances are not equal.
+        /// </summary>
+        /// <param name="left">The left-hand operand.</param>
+        /// <param name="right">The right-hand operand.</param>
+        /// <returns>True if the operands are not equal; otherwise false.</returns>
         public static bool operator !=(JsonPatchFormatterTests? left, JsonPatchFormatterTests? right) => !(left == right);
     }
 }
