@@ -41,3 +41,24 @@ public void NullVsMissingProperty_Removed
 public void MissingPropertyVsNull_Added
 public void EmptyObjectVsEmptyArray_Changed
 ```
+## JsonPatchFormatterTestsExtensions
+
+The JsonPatchFormatterTestsExtensions class provides extension methods for creating and asserting on JSON Patch operations in tests. It simplifies the process of generating JSON Patch strings from changes and validating the resulting operations, such as checking operation count, extracting paths and values, and asserting on specific operation types and values.
+
+Example usage:
+```csharp
+// Arrange: set up a test instance and some changes
+var test = new JsonPatchFormatterTests();
+var changes = new List<JsonChange> { /* ... */ };
+
+// Act: generate the JSON Patch and get the document
+var (json, document) = test.ToJsonPatchWithDocument(changes, "add");
+
+// Assert: check the number of operations
+document.HasOperationCount(1);
+
+// Get the first operation and assert its properties
+var operation = document[0];
+Assert.AreEqual("/test/path", test.GetPath(operation));
+test.HasValue<int>(operation, 42);
+```
