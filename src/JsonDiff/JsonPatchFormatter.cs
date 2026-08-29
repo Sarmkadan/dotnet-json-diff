@@ -16,12 +16,23 @@ public class JsonPatchFormatter : IEquatable<JsonPatchFormatter>
     /// <param name="changes">The list of changes to format.</param>
     /// <returns>A JSON string representing the patch operations.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="changes"/> is <c>null</c>.</exception>
-    public static string ToJsonPatch(IReadOnlyList<JsonChange> changes)
+    public static string ToJsonPatch(IReadOnlyList<JsonChange> changes) => ToJsonPatch(changes, indented: false);
+
+    /// <summary>
+    /// Renders the changes as a JSON Patch string, optionally using indented formatting.
+    /// </summary>
+    /// <param name="changes">The list of changes to format.</param>
+    /// <param name="indented"><c>true</c> to format the JSON with indentation; otherwise, <c>false</c>.</param>
+    /// <returns>A JSON string representing the patch operations.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="changes"/> is <c>null</c>.</exception>
+    public static string ToJsonPatch(IReadOnlyList<JsonChange> changes, bool indented)
     {
         ArgumentNullException.ThrowIfNull(changes);
 
         using var stream = new MemoryStream();
-        using var writer = new Utf8JsonWriter(stream);
+        using var writer = indented
+            ? new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true })
+            : new Utf8JsonWriter(stream);
 
         writer.WriteStartArray();
 
