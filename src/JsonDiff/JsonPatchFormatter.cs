@@ -10,6 +10,24 @@ namespace JsonDiff;
 /// </summary>
 public class JsonPatchFormatter : IEquatable<JsonPatchFormatter>
 {
+    /// <summary>RFC 6902 add operation name.</summary>
+    private const string OpAdd = "add";
+
+    /// <summary>RFC 6902 remove operation name.</summary>
+    private const string OpRemove = "remove";
+
+    /// <summary>RFC 6902 replace operation name.</summary>
+    private const string OpReplace = "replace";
+
+    /// <summary>RFC 6902 operation property name.</summary>
+    private const string OpPropertyName = "op";
+
+    /// <summary>RFC 6902 path property name.</summary>
+    private const string PathPropertyName = "path";
+
+    /// <summary>RFC 6902 value property name.</summary>
+    private const string ValuePropertyName = "value";
+
     /// <summary>
     /// Renders the changes as a JSON Patch string.
     /// </summary>
@@ -43,19 +61,19 @@ public class JsonPatchFormatter : IEquatable<JsonPatchFormatter>
             // Write "op"
             string op = change.Kind switch
             {
-                ChangeKind.Added => "add",
-                ChangeKind.Removed => "remove",
-                _ => "replace" // ChangeKind.Changed
+                ChangeKind.Added => OpAdd,
+                ChangeKind.Removed => OpRemove,
+                _ => OpReplace // ChangeKind.Changed
             };
-            writer.WriteString("op", op);
+            writer.WriteString(OpPropertyName, op);
 
             // Write "path"
-            writer.WriteString("path", change.Path);
+            writer.WriteString(PathPropertyName, change.Path);
 
             // Write "value" if applicable (add and replace require value, remove does not)
             if (change.Kind != ChangeKind.Removed)
             {
-                writer.WritePropertyName("value");
+                writer.WritePropertyName(ValuePropertyName);
                 if (change.Right.HasValue)
                 {
                     change.Right.Value.WriteTo(writer);
