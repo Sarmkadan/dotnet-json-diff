@@ -12,15 +12,15 @@ namespace JsonDiff;
 /// </summary>
 public readonly struct JsonPointer : IEquatable<JsonPointer>
 {
-    private readonly string[]? _segments;
+    private readonly Node? _node;
 
-    private JsonPointer(string[] segments) => _segments = segments;
+    private JsonPointer(Node node) => _node = node;
 
     /// <summary>The pointer to the whole document (no segments, rendered as an empty string).</summary>
     public static JsonPointer Root => default;
 
     /// <summary>The unescaped reference tokens of this pointer, in order from the root.</summary>
-    public IReadOnlyList<string> Segments => _segments ?? [];
+    public IReadOnlyList<string> Segments => GetSegments();
 
     /// <summary>
     /// Returns a new pointer with <paramref name="segment"/> appended as the last reference token.
@@ -32,11 +32,7 @@ public readonly struct JsonPointer : IEquatable<JsonPointer>
     {
         ArgumentNullException.ThrowIfNull(segment);
 
-        var current = _segments ?? [];
-        var next = new string[current.Length + 1];
-        current.CopyTo(next, 0);
-        next[current.Length] = segment;
-        return new JsonPointer(next);
+        return new JsonPointer(new Node(_node, segment));
     }
 
     /// <summary>
@@ -48,7 +44,32 @@ public readonly struct JsonPointer : IEquatable<JsonPointer>
     public static string Escape(string segment)
     {
         ArgumentNullException.ThrowIfNull(segment);
-        return segment.Replace("~", "~0").Replace("/", "~1");
+
+        var firstEscape = segment.IndexOfAny('~', '/');
+        if (firstEscape < 0)
+        {
+            return segment;
+        }
+
+        var sb = new StringBuilder(segment.Length + 1);
+        sb.Append(segment, 0, firstEscape);
+        for (var i = firstEscape; i < segment.Length; i++)
+        {
+            switch (segment[i])
+            {
+                case '~':
+                    sb.Append("~0");
+                    break;
+                case '/':
+                    sb.Append("~1");
+                    break;
+                default:
+                    sb.Append(segment[i]);
+                    break;
+            }
+        }
+
+        return sb.ToString();
     }
 
     /// <summary>
@@ -116,13 +137,13 @@ public readonly struct JsonPointer : IEquatable<JsonPointer>
         }
 
         var tokens = pointer[1..].Split('/');
-        var segments = new string[tokens.Length];
+        var result = Root;
         for (var i = 0; i < tokens.Length; i++)
         {
-            segments[i] = Unescape(tokens[i]);
+            result = result.Append(Unescape(tokens[i]));
         }
 
-        return new JsonPointer(segments);
+        return result;
     }
 
     /// <summary>
@@ -132,8 +153,8 @@ public readonly struct JsonPointer : IEquatable<JsonPointer>
     /// <returns>The escaped pointer string.</returns>
     public string ToPointerString()
     {
-        var segments = _segments;
-        if (segments is null || segments.Length == 0)
+        var segments = GetSegments();
+        if (segments.Length == 0)
         {
             return string.Empty;
         }
@@ -155,8 +176,8 @@ public readonly struct JsonPointer : IEquatable<JsonPointer>
     /// <returns>The display string.</returns>
     public string ToDisplayString()
     {
-        var segments = _segments;
-        if (segments is null || segments.Length == 0)
+        var segments = GetSegments();
+        if (segments.Length == 0)
         {
             return "$";
         }
@@ -187,8 +208,13 @@ public readonly struct JsonPointer : IEquatable<JsonPointer>
     /// <inheritdoc />
     public bool Equals(JsonPointer other)
     {
-        var a = _segments ?? [];
-        var b = other._segments ?? [];
+        if (ReferenceEquals(_node, other._node))
+        {
+            return true;
+        }
+
+        var a = GetSegments();
+        var b = other.GetSegments();
         if (a.Length != b.Length)
         {
             return false;
@@ -212,7 +238,7 @@ public readonly struct JsonPointer : IEquatable<JsonPointer>
     public override int GetHashCode()
     {
         var hash = new HashCode();
-        foreach (var segment in _segments ?? [])
+        foreach (var segment in GetSegments())
         {
             hash.Add(segment, StringComparer.Ordinal);
         }
@@ -225,6 +251,16 @@ public readonly struct JsonPointer : IEquatable<JsonPointer>
 
     /// <summary>Value inequality over segments.</summary>
     public static bool operator !=(JsonPointer left, JsonPointer right) => !left.Equals(right);
+
+    private string[] GetSegments()
+    {
+        if (_node is null)
+        {
+            return [];
+        }
+
+        return _node.GetSegments();
+    }
 
     private static bool IsIdentifierLike(string segment)
     {
@@ -242,5 +278,43 @@ public readonly struct JsonPointer : IEquatable<JsonPointer>
         }
 
         return true;
+    }
+
+    private sealed class Node
+    {
+        private string[]? _segments;
+
+        public Node(Node? parent, string segment)
+        {
+            Parent = parent;
+            Segment = segment;
+            Depth = (parent?.Depth ?? 0) + 1;
+        }
+
+        public Node? Parent { get; }
+
+        public string Segment { get; }
+
+        public int Depth { get; }
+
+        public string[] GetSegments()
+        {
+            var segments = _segments;
+            if (segments is not null)
+            {
+                return segments;
+            }
+
+            segments = new string[Depth];
+            var node = this;
+            for (var i = segments.Length - 1; i >= 0; i--)
+            {
+                segments[i] = node.Segment;
+                node = node.Parent!;
+            }
+
+            _segments = segments;
+            return segments;
+        }
     }
 }
