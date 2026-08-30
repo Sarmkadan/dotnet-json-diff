@@ -12,8 +12,10 @@ public static class JsonChangeExtensions
     /// </summary>
     /// <param name="changes">The collection of changes to check.</param>
     /// <returns><c>true</c> if there are any changes; otherwise, <c>false</c>.</returns>
+    /// <exception cref="ArgumentNullException">changes is null.</exception>
     public static bool HasChanges(this IReadOnlyList<JsonChange> changes)
     {
+        ArgumentNullException.ThrowIfNull(changes);
         return changes.Count > 0;
     }
 
@@ -23,8 +25,10 @@ public static class JsonChangeExtensions
     /// <param name="changes">The collection of changes to filter.</param>
     /// <param name="kind">The change kind to filter by.</param>
     /// <returns>An enumerable containing only changes of the specified kind.</returns>
+    /// <exception cref="ArgumentNullException">changes is null.</exception>
     public static IEnumerable<JsonChange> OfKind(this IReadOnlyList<JsonChange> changes, ChangeKind kind)
     {
+        ArgumentNullException.ThrowIfNull(changes);
         foreach (var change in changes)
         {
             if (change.Kind == kind)
@@ -42,8 +46,10 @@ public static class JsonChangeExtensions
     /// <param name="changes">The collection of changes to filter.</param>
     /// <param name="pointerPrefix">The JSON Pointer prefix to match (e.g., "/user/roles").</param>
     /// <returns>An enumerable containing only changes under the specified path prefix.</returns>
+    /// <exception cref="ArgumentNullException">changes is null.</exception>
     public static IEnumerable<JsonChange> UnderPath(this IReadOnlyList<JsonChange> changes, string pointerPrefix)
     {
+        ArgumentNullException.ThrowIfNull(changes);
         if (string.IsNullOrEmpty(pointerPrefix))
         {
             yield break;
@@ -84,8 +90,10 @@ public static class JsonChangeExtensions
     /// </summary>
     /// <param name="changes">The collection of changes to summarize.</param>
     /// <returns>A multi-line string with one change per line.</returns>
+    /// <exception cref="ArgumentNullException">changes is null.</exception>
     public static string ToSummaryString(this IReadOnlyList<JsonChange> changes)
     {
+        ArgumentNullException.ThrowIfNull(changes);
         if (changes.Count == 0)
         {
             return string.Empty;
