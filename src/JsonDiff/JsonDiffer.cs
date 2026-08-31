@@ -19,11 +19,12 @@ public static class JsonDiffer
     /// <summary>
     /// Diffs two raw JSON strings.
     /// </summary>
+    /// <param name="left">The left JSON string to compare. Must not be null or empty.</param>
+    /// <param name="right">The right JSON string to compare. Must not be null or empty.</param>
+    /// <param name="options">Optional diff options. Uses <see cref="DiffOptions.Default"/> if null.</param>
+    /// <returns>A list of changes between the two JSON documents.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="left"/> or <paramref name="right"/> is null.</exception>
-            /// <param name="left">The left JSON string to compare. Must not be null.</param>
-            /// <param name="right">The right JSON string to compare. Must not be null.</param>
-            /// <param name="options">Optional diff options. Uses <see cref="DiffOptions.Default"/> if null.</param>
-            /// <returns>A list of changes between the two JSON documents.</returns>
+    /// <exception cref="ArgumentException"><paramref name="left"/> or <paramref name="right"/> is empty.</exception>
     /// <exception cref="JsonDiffException">Either input is not valid JSON.</exception>
     /// <exception cref="JsonDiffLimitExceededException">Input exceeds configured limits (depth or node count).</exception>
     public static IReadOnlyList<JsonChange> Diff(string left, string right, DiffOptions? options = null)
@@ -46,11 +47,12 @@ public static class JsonDiffer
     /// <summary>
     /// Diffs two already-parsed <see cref="JsonElement"/> values.
     /// </summary>
+    /// <param name="left">The left <see cref="JsonElement"/> to compare.</param>
+    /// <param name="right">The right <see cref="JsonElement"/> to compare.</param>
+    /// <param name="options">Optional diff options. Uses <see cref="DiffOptions.Default"/> if null.</param>
+    /// <returns>A list of changes between the two JSON documents.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="options"/> has a <see cref="DiffOptions.MaxDepth"/>, <see cref="DiffOptions.MaxNodeCount"/>, or <see cref="DiffOptions.MaxChanges"/> value that is not positive.</exception>
     /// <exception cref="JsonDiffLimitExceededException">Input exceeds configured limits (depth or node count).</exception>
-            /// <param name="left">The left <see cref="JsonElement"/> to compare. Must not be null.</param>
-            /// <param name="right">The right <see cref="JsonElement"/> to compare. Must not be null.</param>
-            /// <param name="options">Optional diff options. Uses <see cref="DiffOptions.Default"/> if null.</param>
-            /// <returns>A list of changes between the two JSON documents.</returns>
     public static IReadOnlyList<JsonChange> Diff(JsonElement left, JsonElement right, DiffOptions? options = null)
     {
         options ??= DiffOptions.Default;
@@ -81,11 +83,12 @@ public static class JsonDiffer
     /// Returns <c>true</c> if the documents are identical or differ only in ways that are considered equal
     /// according to the provided options (e.g., numeric tolerance, property case sensitivity). This is a short-circuiting operation that returns at the first difference found.
     /// </summary>
+    /// <param name="left">The left JSON string to compare. Must not be null or empty.</param>
+    /// <param name="right">The right JSON string to compare. Must not be null or empty.</param>
+    /// <param name="options">Optional diff options. Uses <see cref="DiffOptions.Default"/> if null.</param>
+    /// <returns><c>true</c> if the documents are semantically equal; otherwise, <c>false</c>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="left"/> or <paramref name="right"/> is null.</exception>
-            /// <param name="left">The left JSON string to compare. Must not be null or empty.</param>
-            /// <param name="right">The right JSON string to compare. Must not be null or empty.</param>
-            /// <param name="options">Optional diff options. Uses <see cref="DiffOptions.Default"/> if null.</param>
-            /// <returns><c>true</c> if the documents are semantically equal; otherwise, <c>false</c>.</returns>
+    /// <exception cref="ArgumentException"><paramref name="left"/> or <paramref name="right"/> is empty.</exception>
     /// <exception cref="JsonDiffException">Either input is not valid JSON.</exception>
     /// <exception cref="JsonDiffLimitExceededException">Input exceeds configured limits (depth or node count).</exception>
     public static bool DeepEquals(string left, string right, DiffOptions? options = null)
@@ -110,11 +113,11 @@ public static class JsonDiffer
     /// Returns <c>true</c> if the elements are identical or differ only in ways that are considered equal
     /// according to the provided options (e.g., numeric tolerance, property case sensitivity). This is a short-circuiting operation that returns at the first difference found.
     /// </summary>
+    /// <param name="left">The left <see cref="JsonElement"/> to compare.</param>
+    /// <param name="right">The right <see cref="JsonElement"/> to compare.</param>
+    /// <param name="options">Optional diff options. Uses <see cref="DiffOptions.Default"/> if null.</param>
+    /// <returns><c>true</c> if the elements are semantically equal; otherwise, <c>false</c>.</returns>
     /// <exception cref="JsonDiffLimitExceededException">Input exceeds configured limits (depth or node count).</exception>
-            /// <param name="left">The left <see cref="JsonElement"/> to compare. Must not be null.</param>
-            /// <param name="right">The right <see cref="JsonElement"/> to compare. Must not be null.</param>
-            /// <param name="options">Optional diff options. Uses <see cref="DiffOptions.Default"/> if null.</param>
-            /// <returns><c>true</c> if the elements are semantically equal; otherwise, <c>false</c>.</returns>
     public static bool DeepEquals(JsonElement left, JsonElement right, DiffOptions? options = null)
     {
         options ??= DiffOptions.Default;
