@@ -332,7 +332,18 @@ public static class JsonDiffer
     {
         var props = new Dictionary<string, JsonElement>(comparer);
         foreach (var p in obj.EnumerateObject())
-            props[p.Name] = p.Value;
+        {
+            if (props.ContainsKey(p.Name))
+            {
+                // Key already exists - replace with current value (last wins)
+                props[p.Name] = p.Value;
+            }
+            else
+            {
+                // New key - add it
+                props.Add(p.Name, p.Value);
+            }
+        }
         return props;
     }
 
