@@ -425,7 +425,7 @@ public static class JsonDiffer
         {
             if (TryGetKey(element, opt.ArrayKeySelector, out var key, out var value))
             {
-                leftDict[key] = value;
+                leftDict[key!] = value;
             }
             else
             {
@@ -439,7 +439,7 @@ public static class JsonDiffer
         {
             if (TryGetKey(element, opt.ArrayKeySelector, out var key, out var value))
             {
-                rightDict[key] = value;
+                rightDict[key!] = value;
             }
             else
             {
@@ -473,7 +473,7 @@ public static class JsonDiffer
         }
     }
 
-    private static bool TryGetKey(JsonElement element, string keySelector, out string key, out JsonElement value)
+    private static bool TryGetKey(JsonElement element, string keySelector, out string? key, out JsonElement value)
     {
         key = null;
         value = element;
