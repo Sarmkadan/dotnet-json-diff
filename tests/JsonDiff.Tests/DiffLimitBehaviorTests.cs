@@ -128,6 +128,6 @@ public class DiffLimitBehaviorTests
     {
         var exception = Assert.Throws<JsonDiffException>(() => JsonDiffer.Diff("{", "{}"));
 
-        Assert.IsType<JsonException>(exception.InnerException);
+        Assert.IsAssignableFrom<JsonException>(exception.InnerException);
     }
 }

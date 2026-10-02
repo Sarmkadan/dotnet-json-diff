@@ -80,7 +80,8 @@ public static class JsonDiffer
         }
 
         var changes = new List<JsonChange>();
-        Walk(JsonPointer.Root, left, right, options, changes, 0, 0);
+        int nodeCount = 0;
+        Walk(JsonPointer.Root, left, right, options, changes, 0, ref nodeCount);
         return changes;
     }
 
@@ -252,7 +253,7 @@ public static class JsonDiffer
         return true;
     }
 
-    private static void Walk(JsonPointer path, JsonElement left, JsonElement right, DiffOptions opt, List<JsonChange> sink, int depth, int nodeCount)
+    private static void Walk(JsonPointer path, JsonElement left, JsonElement right, DiffOptions opt, List<JsonChange> sink, int depth, ref int nodeCount)
     {
         // Check depth limit first
         if (opt.MaxDepth.HasValue && depth >= opt.MaxDepth.Value)
@@ -266,8 +267,8 @@ public static class JsonDiffer
         }
 
         // Check node count limit
-        int currentNodeCount = nodeCount + 1; // Count this node
-        if (opt.MaxNodeCount.HasValue && currentNodeCount > opt.MaxNodeCount.Value)
+        nodeCount++;
+        if (opt.MaxNodeCount.HasValue && nodeCount > opt.MaxNodeCount.Value)
         {
             throw new JsonDiffLimitExceededException(
                 $"JSON document exceeds maximum node count limit of {opt.MaxNodeCount.Value} nodes at path '{path.ToPointerString()}'.",
@@ -284,10 +285,10 @@ public static class JsonDiffer
         switch (left.ValueKind)
         {
             case JsonValueKind.Object:
-                WalkObject(path, left, right, opt, sink, depth, currentNodeCount);
+                WalkObject(path, left, right, opt, sink, depth, ref nodeCount);
                 break;
             case JsonValueKind.Array:
-                WalkArray(path, left, right, opt, sink, depth, currentNodeCount);
+                WalkArray(path, left, right, opt, sink, depth, ref nodeCount);
                 break;
             default:
                 if (!ScalarEquals(left, right, opt))
@@ -296,7 +297,7 @@ public static class JsonDiffer
         }
     }
 
-    private static void WalkObject(JsonPointer path, JsonElement left, JsonElement right, DiffOptions opt, List<JsonChange> sink, int depth, int nodeCount)
+    private static void WalkObject(JsonPointer path, JsonElement left, JsonElement right, DiffOptions opt, List<JsonChange> sink, int depth, ref int nodeCount)
     {
         var comparer = opt.IgnorePropertyCase
             ? StringComparer.OrdinalIgnoreCase
@@ -310,7 +311,7 @@ public static class JsonDiffer
         {
             var childPath = path.Append(name);
             if (rightProps.TryGetValue(name, out var rv))
-                Walk(childPath, lv, rv, opt, sink, depth + 1, nodeCount);
+                Walk(childPath, lv, rv, opt, sink, depth + 1, ref nodeCount);
             else
                 sink.Add(new JsonChange(ChangeKind.Removed, childPath.ToPointerString(), lv.Clone(), null));
         }
@@ -347,7 +348,7 @@ public static class JsonDiffer
         return props;
     }
 
-    private static void WalkArray(JsonPointer path, JsonElement left, JsonElement right, DiffOptions opt, List<JsonChange> sink, int depth, int nodeCount)
+    private static void WalkArray(JsonPointer path, JsonElement left, JsonElement right, DiffOptions opt, List<JsonChange> sink, int depth, ref int nodeCount)
     {
         var l = left.EnumerateArray().ToArray();
         var r = right.EnumerateArray().ToArray();
@@ -355,30 +356,30 @@ public static class JsonDiffer
         // Handle array shift detection when enabled and arrays have different lengths
         if (opt.DetectArrayShifts && l.Length != r.Length)
         {
-            HandleArrayShifts(path, l, r, opt, sink, depth, nodeCount);
+            HandleArrayShifts(path, l, r, opt, sink, depth, ref nodeCount);
             return;
         }
 
         switch (opt.ArrayComparison)
         {
             case ArrayComparison.Ordered:
-                WalkArrayOrdered(path, l, r, opt, sink, depth, nodeCount);
+                WalkArrayOrdered(path, l, r, opt, sink, depth, ref nodeCount);
                 break;
             case ArrayComparison.Unordered:
-                WalkArrayUnordered(path, l, r, opt, sink, depth, nodeCount);
+                WalkArrayUnordered(path, l, r, opt, sink, depth, ref nodeCount);
                 break;
             case ArrayComparison.KeyedBy:
-                WalkArrayKeyed(path, l, r, opt, sink, depth, nodeCount);
+                WalkArrayKeyed(path, l, r, opt, sink, depth, ref nodeCount);
                 break;
         }
     }
 
-    private static void WalkArrayOrdered(JsonPointer path, JsonElement[] l, JsonElement[] r, DiffOptions opt, List<JsonChange> sink, int depth, int nodeCount)
+    private static void WalkArrayOrdered(JsonPointer path, JsonElement[] l, JsonElement[] r, DiffOptions opt, List<JsonChange> sink, int depth, ref int nodeCount)
     {
         var common = Math.Min(l.Length, r.Length);
 
         for (var i = 0; i < common; i++)
-            Walk(path.Append(i.ToString()), l[i], r[i], opt, sink, depth + 1, nodeCount);
+            Walk(path.Append(i.ToString()), l[i], r[i], opt, sink, depth + 1, ref nodeCount);
 
         for (var i = common; i < l.Length; i++)
             sink.Add(new JsonChange(ChangeKind.Removed, path.Append(i.ToString()).ToPointerString(), l[i].Clone(), null));
@@ -387,7 +388,7 @@ public static class JsonDiffer
             sink.Add(new JsonChange(ChangeKind.Added, path.Append(i.ToString()).ToPointerString(), null, r[i].Clone()));
     }
 
-    private static void WalkArrayUnordered(JsonPointer path, JsonElement[] l, JsonElement[] r, DiffOptions opt, List<JsonChange> sink, int depth, int nodeCount)
+    private static void WalkArrayUnordered(JsonPointer path, JsonElement[] l, JsonElement[] r, DiffOptions opt, List<JsonChange> sink, int depth, ref int nodeCount)
     {
         // For unordered comparison, we need to match elements by deep equality
         // We'll use a multiset approach: match elements from left to right, report unmatched as removed/added
@@ -431,12 +432,12 @@ public static class JsonDiffer
         }
     }
 
-    private static void WalkArrayKeyed(JsonPointer path, JsonElement[] l, JsonElement[] r, DiffOptions opt, List<JsonChange> sink, int depth, int nodeCount)
+    private static void WalkArrayKeyed(JsonPointer path, JsonElement[] l, JsonElement[] r, DiffOptions opt, List<JsonChange> sink, int depth, ref int nodeCount)
     {
         if (string.IsNullOrEmpty(opt.ArrayKeySelector))
         {
             // Fall back to ordered comparison if no key selector is provided
-            WalkArrayOrdered(path, l, r, opt, sink, depth, nodeCount);
+            WalkArrayOrdered(path, l, r, opt, sink, depth, ref nodeCount);
             return;
         }
 
@@ -477,7 +478,7 @@ public static class JsonDiffer
             if (rightDict.TryGetValue(kvp.Key, out var rightElement))
             {
                 var elementPath = path.Append(Array.IndexOf(l, kvp.Value).ToString());
-                Walk(elementPath, kvp.Value, rightElement, opt, sink, depth + 1, nodeCount);
+                Walk(elementPath, kvp.Value, rightElement, opt, sink, depth + 1, ref nodeCount);
                 rightDict.Remove(kvp.Key); // Mark as matched
             }
             else
@@ -541,7 +542,7 @@ public static class JsonDiffer
         return false;
     }
 
-    private static void HandleArrayShifts(JsonPointer path, JsonElement[] l, JsonElement[] r, DiffOptions opt, List<JsonChange> sink, int depth, int nodeCount)
+    private static void HandleArrayShifts(JsonPointer path, JsonElement[] l, JsonElement[] r, DiffOptions opt, List<JsonChange> sink, int depth, ref int nodeCount)
     {
         var shorter = l.Length < r.Length ? l : r;
         var longer = l.Length < r.Length ? r : l;
@@ -604,7 +605,7 @@ public static class JsonDiffer
         // Not a simple shift - fall back to index-by-index comparison
         var common = Math.Min(l.Length, r.Length);
         for (var i = 0; i < common; i++)
-            Walk(path.Append(i.ToString()), l[i], r[i], opt, sink, depth + 1, nodeCount);
+            Walk(path.Append(i.ToString()), l[i], r[i], opt, sink, depth + 1, ref nodeCount);
 
         for (var i = common; i < l.Length; i++)
             sink.Add(new JsonChange(ChangeKind.Removed, path.Append(i.ToString()).ToPointerString(), l[i].Clone(), null));

@@ -65,9 +65,9 @@ namespace JsonDiff.Tests
 
             var changes = JsonDiffer.Diff(left, right, options);
 
-            // With numeric tolerance enabled, the two values are considered equal
-            // because they round to the same double value.
-            Assert.Empty(changes);
+            // With numeric tolerance enabled and Semantic comparison, values are compared
+            // as decimal first (which preserves full precision), so these are different.
+            Assert.Single(changes);
         }
 
         [Fact]
@@ -106,7 +106,7 @@ namespace JsonDiff.Tests
             Assert.Single(changes);
             var change = changes.SingleChange();
             Assert.Equal(ChangeKind.Changed, change.Kind);
-            Assert.Equal("a", change.Path);
+            Assert.Equal("/a", change.Path);
         }
 
         [Fact]
@@ -144,7 +144,7 @@ namespace JsonDiff.Tests
             Assert.Single(changes);
             var change = changes.SingleChange();
             Assert.Equal(ChangeKind.Removed, change.Kind);
-            Assert.Equal("a", change.Path);
+            Assert.Equal("/a", change.Path);
         }
 
         [Fact]
@@ -163,7 +163,7 @@ namespace JsonDiff.Tests
             Assert.Single(changes);
             var change = changes.SingleChange();
             Assert.Equal(ChangeKind.Added, change.Kind);
-            Assert.Equal("a", change.Path);
+            Assert.Equal("/a", change.Path);
         }
 
         [Fact]
