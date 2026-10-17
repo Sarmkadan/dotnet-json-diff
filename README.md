@@ -48,6 +48,78 @@ foreach (var change in JsonDiffer.Diff(before, after, options))
 
 Other options (`MaxDepth`, `MaxChanges`, `MaxNodeCount`, `DetectArrayShifts`, `NumberComparison`, ...) are documented on `DiffOptions`.
 
+### Export a diff as a JSON Patch (RFC 6902)
+
+JsonDiff produces patches but does not apply them. To apply the output to a document, pass it to an RFC 6902 implementation.
+
+```csharp
+using JsonDiff;
+
+var left = """{"name":"Ada","age":36,"tags":["a","b"]}""";
+var right = """{"name":"Ada","age":37,"tags":["a","b","c"]}""";
+
+var changes = JsonDiffer.Diff(left, right);
+string patch = JsonPatchFormatter.ToJsonPatch(changes, indented: true);
+Console.WriteLine(patch);
+
+// [
+//   {
+//     "op": "replace",
+//     "path": "/age",
+//     "value": 37
+//   },
+//   {
+//     "op": "add",
+//     "path": "/tags/2",
+//     "value": "c"
+//   }
+// ]
+```
+
+### Export a diff as a JSON Merge Patch (RFC 7386)
+
+Removed properties become `null`. Merge Patch replaces arrays as whole values, so a change to an individual array element throws `NotSupportedException`.
+
+```csharp
+using JsonDiff;
+
+var before = """{"name":"Ada","age":36,"role":"admin"}""";
+var after  = """{"name":"Ada","age":37}""";
+
+var changes = JsonDiffer.Diff(before, after);
+string mergePatch = JsonMergePatchFormatter.ToJsonMergePatch(changes);
+Console.WriteLine(mergePatch);
+
+// {"age":37,"role":null}
+```
+
+### Check deep equality
+
+`JsonDiffer.DeepEquals` returns a `bool` and stops at the first difference. Key order is ignored, and numeric values compare equal by default (`NumericTolerance` defaults to `true`).
+
+```csharp
+using JsonDiff;
+
+var a = """{"a":1,"b":{"c":true}}""";
+var b = """{"b":{"c":true},"a":1.0}""";
+var c = """{"a":1,"b":{"c":false}}""";
+
+Console.WriteLine(JsonDiffer.DeepEquals(a, b));                              // True
+Console.WriteLine(a.DeepEquals(b));                                          // True (extension method)
+Console.WriteLine(JsonDiffer.DeepEquals(a, c));                              // False
+Console.WriteLine(a.DeepEquals(b, new DiffOptions { NumericTolerance = false })); // False: 1 vs 1.0 is a change
+```
+
+## API overview
+
+| Class | Purpose |
+|---|---|
+| `JsonDiffer` | Static entry points: `Diff` lists the changes between two documents; `DeepEquals` checks whether they are semantically equal. |
+| `JsonChange` | Readonly record struct for one change: `Kind`, JSON Pointer `Path`, and the `Left` / `Right` values. |
+| `DiffOptions` | Immutable options (`init` properties) for comparison behavior and limits. |
+| `JsonPatchFormatter` | Renders a list of changes as an RFC 6902 JSON Patch document. |
+| `JsonMergePatchFormatter` | Renders a list of changes as an RFC 7386 JSON Merge Patch document. |
+
 ## DeepEqualsTests
 
 The DeepEqualsTests class contains tests for the DeepEquals method, which checks for deep equality between two JSON objects. It verifies that the method correctly handles various scenarios, such as identical documents, key order differences, added or removed properties, and more.
