@@ -10,9 +10,16 @@
     <PackageId>JsonDiff</PackageId>
     <Version>0.2.0</Version>
     <Authors>Vladyslav Zaiets</Authors>
-    <Description>Tiny semantic JSON diff. Ignores object key order, reports added/removed/changed paths.</Description>
-    <PackageTags>json;diff;compare;semantic</PackageTags>
+    <Description>Semantic JSON diff, patch, and merge-patch generation for .NET: compares two JSON documents ignoring key order and emits Added/Removed/Changed paths as JSON Patch (RFC 6902) or JSON Merge Patch (RFC 7386).</Description>
+    <PackageTags>json;diff;patch;merge;jsonpatch</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/Sarmkadan/dotnet-json-diff</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
 </Project>
