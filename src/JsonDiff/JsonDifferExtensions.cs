@@ -30,6 +30,8 @@ public static class JsonDifferExtensions
     /// <exception cref="JsonDiffException">Either input is not valid JSON.</exception>
     public static IReadOnlyList<JsonChange> Diff(this string left, string right, DiffOptions? options = null)
     {
+        options = DiffOptions.Resolve(options);
+
         ArgumentNullException.ThrowIfNull(left);
         ArgumentNullException.ThrowIfNull(right);
         ArgumentException.ThrowIfNullOrEmpty(left.Trim(), nameof(left));
@@ -58,6 +60,8 @@ public static class JsonDifferExtensions
     /// <exception cref="JsonDiffException">Either input is not valid JSON.</exception>
     public static IReadOnlyList<JsonChange> Diff(ReadOnlySpan<byte> leftUtf8, ReadOnlySpan<byte> rightUtf8, DiffOptions? options = null)
     {
+        options = DiffOptions.Resolve(options);
+
         if (leftUtf8.IsEmpty && rightUtf8.IsEmpty)
         {
             return Array.Empty<JsonChange>();
@@ -82,6 +86,8 @@ public static class JsonDifferExtensions
     /// <exception cref="IOException">Error reading from stream.</exception>
     public static IReadOnlyList<JsonChange> Diff(Stream leftStream, Stream rightStream, DiffOptions? options = null)
     {
+        options = DiffOptions.Resolve(options);
+
         ArgumentNullException.ThrowIfNull(leftStream);
         ArgumentNullException.ThrowIfNull(rightStream);
 
@@ -105,6 +111,8 @@ public static class JsonDifferExtensions
     /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>
     public static async Task<IReadOnlyList<JsonChange>> DiffAsync(Stream leftStream, Stream rightStream, DiffOptions? options = null, CancellationToken cancellationToken = default)
     {
+        options = DiffOptions.Resolve(options);
+
         ArgumentNullException.ThrowIfNull(leftStream);
         ArgumentNullException.ThrowIfNull(rightStream);
 
@@ -123,6 +131,8 @@ public static class JsonDifferExtensions
     /// <exception cref="ArgumentNullException"><paramref name="left"/> or <paramref name="right"/> is null.</exception>
     public static IReadOnlyList<JsonChange> Diff(JsonNode? left, JsonNode? right, DiffOptions? options = null)
     {
+        options = DiffOptions.Resolve(options);
+
         ArgumentNullException.ThrowIfNull(left);
         ArgumentNullException.ThrowIfNull(right);
 
@@ -143,6 +153,8 @@ public static class JsonDifferExtensions
     /// <exception cref="JsonDiffException">Left input is not valid JSON.</exception>
     public static IReadOnlyList<JsonChange> Diff(this string leftJson, JsonElement right, DiffOptions? options = null)
     {
+        options = DiffOptions.Resolve(options);
+
         ArgumentNullException.ThrowIfNull(leftJson);
         ArgumentNullException.ThrowIfNull(right);
         ArgumentException.ThrowIfNullOrEmpty(leftJson.Trim(), nameof(leftJson));
@@ -163,6 +175,8 @@ public static class JsonDifferExtensions
     /// <exception cref="JsonDiffException">Right input is not valid JSON.</exception>
     public static IReadOnlyList<JsonChange> Diff(JsonElement left, string rightJson, DiffOptions? options = null)
     {
+        options = DiffOptions.Resolve(options);
+
         ArgumentNullException.ThrowIfNull(left);
         ArgumentNullException.ThrowIfNull(rightJson);
         ArgumentException.ThrowIfNullOrEmpty(rightJson.Trim(), nameof(rightJson));
@@ -181,6 +195,8 @@ public static class JsonDifferExtensions
     /// <exception cref="ArgumentNullException"><paramref name="left"/> or <paramref name="right"/> is null.</exception>
     public static IReadOnlyList<JsonChange> Diff(this JsonDocument left, JsonDocument right, DiffOptions? options = null)
     {
+        options = DiffOptions.Resolve(options);
+
         ArgumentNullException.ThrowIfNull(left);
         ArgumentNullException.ThrowIfNull(right);
 
@@ -198,6 +214,8 @@ public static class JsonDifferExtensions
     /// <exception cref="ArgumentNullException"><paramref name="left"/> or <paramref name="right"/> is null.</exception>
     public static IReadOnlyList<JsonChange> Diff(this JsonDocument left, JsonElement right, DiffOptions? options = null)
     {
+        options = DiffOptions.Resolve(options);
+
         ArgumentNullException.ThrowIfNull(left);
         ArgumentNullException.ThrowIfNull(right);
 
@@ -215,6 +233,8 @@ public static class JsonDifferExtensions
     /// <exception cref="ArgumentNullException"><paramref name="left"/> or <paramref name="right"/> is null.</exception>
     public static IReadOnlyList<JsonChange> Diff(JsonElement left, JsonDocument right, DiffOptions? options = null)
     {
+        options = DiffOptions.Resolve(options);
+
         ArgumentNullException.ThrowIfNull(left);
         ArgumentNullException.ThrowIfNull(right);
 
@@ -237,6 +257,8 @@ public static class JsonDifferExtensions
     /// <exception cref="JsonDiffException">Either input is not valid JSON.</exception>
     public static bool DeepEquals(this string left, string right, DiffOptions? options = null)
     {
+        options = DiffOptions.Resolve(options);
+
         ArgumentNullException.ThrowIfNull(left);
         ArgumentNullException.ThrowIfNull(right);
         ArgumentException.ThrowIfNullOrEmpty(left.Trim(), nameof(left));
@@ -258,6 +280,8 @@ public static class JsonDifferExtensions
     /// <exception cref="JsonDiffException">Either input is not valid JSON.</exception>
     public static bool DeepEquals(ReadOnlySpan<byte> leftUtf8, ReadOnlySpan<byte> rightUtf8, DiffOptions? options = null)
     {
+        options = DiffOptions.Resolve(options);
+
         if (leftUtf8.IsEmpty && rightUtf8.IsEmpty)
         {
             return true;
@@ -282,6 +306,8 @@ public static class JsonDifferExtensions
     /// <exception cref="IOException">Error reading from stream.</exception>
     public static bool DeepEquals(Stream leftStream, Stream rightStream, DiffOptions? options = null)
     {
+        options = DiffOptions.Resolve(options);
+
         ArgumentNullException.ThrowIfNull(leftStream);
         ArgumentNullException.ThrowIfNull(rightStream);
 
@@ -305,6 +331,8 @@ public static class JsonDifferExtensions
     /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>
     public static async Task<bool> DeepEqualsAsync(Stream leftStream, Stream rightStream, DiffOptions? options = null, CancellationToken cancellationToken = default)
     {
+        options = DiffOptions.Resolve(options);
+
         ArgumentNullException.ThrowIfNull(leftStream);
         ArgumentNullException.ThrowIfNull(rightStream);
 
@@ -323,6 +351,8 @@ public static class JsonDifferExtensions
     /// <exception cref="ArgumentNullException"><paramref name="left"/> or <paramref name="right"/> is null.</exception>
     public static bool DeepEquals(JsonNode? left, JsonNode? right, DiffOptions? options = null)
     {
+        options = DiffOptions.Resolve(options);
+
         ArgumentNullException.ThrowIfNull(left);
         ArgumentNullException.ThrowIfNull(right);
 
@@ -343,6 +373,8 @@ public static class JsonDifferExtensions
     /// <exception cref="JsonDiffException">Left input is not valid JSON.</exception>
     public static bool DeepEquals(this string leftJson, JsonElement right, DiffOptions? options = null)
     {
+        options = DiffOptions.Resolve(options);
+
         ArgumentNullException.ThrowIfNull(leftJson);
         ArgumentNullException.ThrowIfNull(right);
         ArgumentException.ThrowIfNullOrEmpty(leftJson.Trim(), nameof(leftJson));
@@ -363,6 +395,8 @@ public static class JsonDifferExtensions
     /// <exception cref="JsonDiffException">Right input is not valid JSON.</exception>
     public static bool DeepEquals(JsonElement left, string rightJson, DiffOptions? options = null)
     {
+        options = DiffOptions.Resolve(options);
+
         ArgumentNullException.ThrowIfNull(left);
         ArgumentNullException.ThrowIfNull(rightJson);
         ArgumentException.ThrowIfNullOrEmpty(rightJson.Trim(), nameof(rightJson));
@@ -381,6 +415,8 @@ public static class JsonDifferExtensions
     /// <exception cref="ArgumentNullException"><paramref name="left"/> or <paramref name="right"/> is null.</exception>
     public static bool DeepEquals(this JsonDocument left, JsonElement right, DiffOptions? options = null)
     {
+        options = DiffOptions.Resolve(options);
+
         ArgumentNullException.ThrowIfNull(left);
         ArgumentNullException.ThrowIfNull(right);
 
@@ -397,6 +433,8 @@ public static class JsonDifferExtensions
     /// <exception cref="ArgumentNullException"><paramref name="left"/> or <paramref name="right"/> is null.</exception>
     public static bool DeepEquals(JsonElement left, JsonDocument right, DiffOptions? options = null)
     {
+        options = DiffOptions.Resolve(options);
+
         ArgumentNullException.ThrowIfNull(left);
         ArgumentNullException.ThrowIfNull(right);
 
@@ -413,6 +451,8 @@ public static class JsonDifferExtensions
     /// <exception cref="ArgumentNullException"><paramref name="left"/> or <paramref name="right"/> is null.</exception>
     public static bool DeepEquals(this JsonDocument left, JsonDocument right, DiffOptions? options = null)
     {
+        options = DiffOptions.Resolve(options);
+
         ArgumentNullException.ThrowIfNull(left);
         ArgumentNullException.ThrowIfNull(right);
 

@@ -29,6 +29,8 @@ public static class JsonDiffer
     /// <exception cref="JsonDiffLimitExceededException">Input exceeds configured limits (depth or node count).</exception>
     public static IReadOnlyList<JsonChange> Diff(string left, string right, DiffOptions? options = null)
     {
+        options = DiffOptions.Resolve(options);
+
         ArgumentNullException.ThrowIfNull(left);
         ArgumentNullException.ThrowIfNull(right);
         ArgumentException.ThrowIfNullOrEmpty(left);
@@ -54,30 +56,15 @@ public static class JsonDiffer
     /// <param name="options">Optional diff options. Uses <see cref="DiffOptions.Default"/> if null.</param>
     /// <returns>A list of changes between the two JSON documents.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="left"/> or <paramref name="right"/> is null.</exception>
-    /// <exception cref="ArgumentOutOfRangeException"><paramref name="options"/> has a <see cref="DiffOptions.MaxDepth"/>, <see cref="DiffOptions.MaxNodeCount"/>, or <see cref="DiffOptions.MaxChanges"/> value that is not positive.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="options"/> has a <see cref="DiffOptions.MaxDepth"/>, <see cref="DiffOptions.MaxNodeCount"/>, <see cref="DiffOptions.MaxChanges"/>, or <see cref="DiffOptions.MaxArrayShiftDetectionSize"/> value that is not positive.</exception>
+    /// <exception cref="ArgumentException"><paramref name="options"/> is internally inconsistent (see <see cref="DiffOptions.Validate"/>).</exception>
     /// <exception cref="JsonDiffLimitExceededException">Input exceeds configured limits (depth or node count).</exception>
     public static IReadOnlyList<JsonChange> Diff(JsonElement left, JsonElement right, DiffOptions? options = null)
     {
+        options = DiffOptions.Resolve(options);
+
         ArgumentNullException.ThrowIfNull(left);
         ArgumentNullException.ThrowIfNull(right);
-
-        options ??= DiffOptions.Default;
-
-        // Validate options
-        if (options.MaxDepth.HasValue && options.MaxDepth.Value <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(options), "MaxDepth must be a positive integer or null.");
-        }
-
-        if (options.MaxNodeCount.HasValue && options.MaxNodeCount.Value <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(options), "MaxNodeCount must be a positive integer or null.");
-        }
-
-        if (options.MaxChanges.HasValue && options.MaxChanges.Value <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(options), "MaxChanges must be a positive integer or null.");
-        }
 
         var changes = new List<JsonChange>();
         int nodeCount = 0;
@@ -100,6 +87,8 @@ public static class JsonDiffer
     /// <exception cref="JsonDiffLimitExceededException">Input exceeds configured limits (depth or node count).</exception>
     public static bool DeepEquals(string left, string right, DiffOptions? options = null)
     {
+        options = DiffOptions.Resolve(options);
+
         ArgumentNullException.ThrowIfNull(left);
         ArgumentNullException.ThrowIfNull(right);
         ArgumentException.ThrowIfNullOrEmpty(left);
@@ -130,26 +119,10 @@ public static class JsonDiffer
     /// <exception cref="JsonDiffLimitExceededException">Input exceeds configured limits (depth or node count).</exception>
     public static bool DeepEquals(JsonElement left, JsonElement right, DiffOptions? options = null)
     {
+        options = DiffOptions.Resolve(options);
+
         ArgumentNullException.ThrowIfNull(left);
         ArgumentNullException.ThrowIfNull(right);
-
-        options ??= DiffOptions.Default;
-
-        // Validate options
-        if (options.MaxDepth.HasValue && options.MaxDepth.Value <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(options), "MaxDepth must be a positive integer or null.");
-        }
-
-        if (options.MaxNodeCount.HasValue && options.MaxNodeCount.Value <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(options), "MaxNodeCount must be a positive integer or null.");
-        }
-
-        if (options.MaxChanges.HasValue && options.MaxChanges.Value <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(options), "MaxChanges must be a positive integer or null.");
-        }
 
         return WalkAndCompare(JsonPointer.Root, left, right, options, 0, 0);
     }

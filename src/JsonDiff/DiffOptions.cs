@@ -144,5 +144,79 @@ public sealed class DiffOptions : IDiffOptions
     /// </remarks>
     public int? MaxNodeCount { get; init; } = 100_000;
 
+    /// <summary>
+    /// Validates this instance, throwing if it contains an invalid value or an invalid combination of options.
+    /// </summary>
+    /// <remarks>
+    /// Every diff and deep-equality entry point calls this before parsing or traversing any input,
+    /// so invalid options fail immediately. Call it directly to check a configuration up front.
+    /// Checks performed:
+    /// <list type="bullet">
+    /// <item><see cref="MaxDepth"/>, <see cref="MaxNodeCount"/>, <see cref="MaxChanges"/> and
+    /// <see cref="MaxArrayShiftDetectionSize"/> must be positive when set.</item>
+    /// <item><see cref="ArrayComparison"/> and <see cref="NumberComparison"/> must be defined enum values.</item>
+    /// <item><see cref="ArrayComparison.KeyedBy"/> requires a non-blank <see cref="ArrayKeySelector"/>.</item>
+    /// <item><see cref="ArrayKeySelector"/> may only be set with <see cref="ArrayComparison.KeyedBy"/>.</item>
+    /// <item><see cref="DetectArrayShifts"/> may only be enabled with <see cref="ArrayComparison.Ordered"/>,
+    /// because shift detection reports index-based changes and would override the selected comparison.</item>
+    /// </list>
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">A numeric limit is not positive, or an enum value is undefined.
+    /// The <see cref="ArgumentException.ParamName"/> is the name of the offending property.</exception>
+    /// <exception cref="ArgumentException">Options conflict with each other, or a required option is missing.
+    /// The <see cref="ArgumentException.ParamName"/> is the name of the offending property.</exception>
+    public void Validate()
+    {
+        ValidatePositiveOrNull(MaxDepth, nameof(MaxDepth));
+        ValidatePositiveOrNull(MaxNodeCount, nameof(MaxNodeCount));
+        ValidatePositiveOrNull(MaxChanges, nameof(MaxChanges));
+        ValidatePositiveOrNull(MaxArrayShiftDetectionSize, nameof(MaxArrayShiftDetectionSize));
+
+        if (!Enum.IsDefined(ArrayComparison))
+        {
+            throw new ArgumentOutOfRangeException(nameof(ArrayComparison), ArrayComparison, "ArrayComparison must be a defined value.");
+        }
+
+        if (!Enum.IsDefined(NumberComparison))
+        {
+            throw new ArgumentOutOfRangeException(nameof(NumberComparison), NumberComparison, "NumberComparison must be a defined value.");
+        }
+
+        if (ArrayComparison == ArrayComparison.KeyedBy)
+        {
+            if (string.IsNullOrWhiteSpace(ArrayKeySelector))
+            {
+                throw new ArgumentException("ArrayKeySelector must be a non-blank path when ArrayComparison is KeyedBy.", nameof(ArrayKeySelector));
+            }
+        }
+        else if (ArrayKeySelector is not null)
+        {
+            throw new ArgumentException("ArrayKeySelector can only be set when ArrayComparison is KeyedBy.", nameof(ArrayKeySelector));
+        }
+
+        if (DetectArrayShifts && ArrayComparison != ArrayComparison.Ordered)
+        {
+            throw new ArgumentException("DetectArrayShifts can only be enabled when ArrayComparison is Ordered.", nameof(DetectArrayShifts));
+        }
+    }
+
+    /// <summary>
+    /// Returns <paramref name="options"/>, or <see cref="Default"/> when it is null, after validating it.
+    /// </summary>
+    internal static DiffOptions Resolve(DiffOptions? options)
+    {
+        options ??= Default;
+        options.Validate();
+        return options;
+    }
+
+    private static void ValidatePositiveOrNull(int? value, string propertyName)
+    {
+        if (value.HasValue && value.Value <= 0)
+        {
+            throw new ArgumentOutOfRangeException(propertyName, value, $"{propertyName} must be a positive integer or null.");
+        }
+    }
+
     internal static readonly DiffOptions Default = new();
 }
