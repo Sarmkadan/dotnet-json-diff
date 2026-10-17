@@ -1,3 +1,53 @@
+## Getting Started
+
+### Install
+
+```bash
+dotnet add package JsonDiff
+```
+
+### Diff two JSON strings
+
+```csharp
+using JsonDiff;
+
+var left = """{"name":"Ada","age":36,"tags":["a","b"]}""";
+var right = """{"name":"Ada","age":37,"tags":["a","b","c"]}""";
+
+IReadOnlyList<JsonChange> changes = JsonDiffer.Diff(left, right);
+foreach (var change in changes)
+    Console.WriteLine(change);
+
+// ~ /age: 36 -> 37
+// + /tags/2: "c"
+```
+
+Each `JsonChange` has a `Kind` (`ChangeKind.Added`, `Removed`, `Changed`), a JSON Pointer `Path`, and the `Left` / `Right` values.
+
+### Customize the diff with `DiffOptions`
+
+```csharp
+using JsonDiff;
+
+var before = """{"Items":[{"id":"x","qty":1.0},{"id":"y","qty":2}]}""";
+var after  = """{"items":[{"id":"y","qty":2.0},{"id":"x","qty":3}]}""";
+
+var options = new DiffOptions
+{
+    IgnorePropertyCase = true,                    // "Items" matches "items"
+    NumericTolerance = true,                      // 2 and 2.0 are equal
+    ArrayComparison = ArrayComparison.KeyedBy,    // match array elements by key
+    ArrayKeySelector = "/id",                     // ...using their "id" property
+};
+
+foreach (var change in JsonDiffer.Diff(before, after, options))
+    Console.WriteLine(change);
+
+// ~ /Items/0/qty: 1.0 -> 3
+```
+
+Other options (`MaxDepth`, `MaxChanges`, `MaxNodeCount`, `DetectArrayShifts`, `NumberComparison`, ...) are documented on `DiffOptions`.
+
 ## DeepEqualsTests
 
 The DeepEqualsTests class contains tests for the DeepEquals method, which checks for deep equality between two JSON objects. It verifies that the method correctly handles various scenarios, such as identical documents, key order differences, added or removed properties, and more.
