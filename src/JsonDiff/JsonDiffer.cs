@@ -519,58 +519,46 @@ public static class JsonDiffer
         var longer = l.Length < r.Length ? r : l;
         var isAdded = l.Length < r.Length; // true if right is longer (added elements), false if left is longer (removed elements)
 
-        // Check if shorter array is a prefix of longer array
-        bool isPrefix = true;
-        for (int i = 0; i < shorter.Length; i++)
+        // Reports the extra elements of the longer array in [start, end) as Added or Removed.
+        void ReportRun(int start, int end)
         {
-            if (!ElementsEqual(shorter[i], longer[i], opt))
+            for (var i = start; i < end; i++)
             {
-                isPrefix = false;
-                break;
+                var elementPath = path.Append(i.ToString()).ToPointerString();
+                sink.Add(isAdded
+                    ? new JsonChange(ChangeKind.Added, elementPath, null, longer[i].Clone())
+                    : new JsonChange(ChangeKind.Removed, elementPath, longer[i].Clone(), null));
             }
         }
 
-        if (isPrefix)
+        // Shorter array is a prefix of the longer one: only the trailing extras differ.
+        if (TailAligned(shorter, longer, 0, 0, opt))
         {
-            // All elements in shorter array match prefix of longer array
-            // Report only the extra elements at the end
-            var startIndex = shorter.Length;
-            for (var i = startIndex; i < longer.Length; i++)
-            {
-                var elementPath = path.Append(i.ToString());
-                if (isAdded)
-                    sink.Add(new JsonChange(ChangeKind.Added, elementPath.ToPointerString(), null, longer[i].Clone()));
-                else
-                    sink.Add(new JsonChange(ChangeKind.Removed, elementPath.ToPointerString(), longer[i].Clone(), null));
-            }
+            ReportRun(shorter.Length, longer.Length);
             return;
         }
 
-        // Check if shorter array is a suffix of longer array
-        bool isSuffix = true;
+        // Shorter array is a suffix of the longer one: only the leading extras differ.
         var offset = longer.Length - shorter.Length;
-        for (int i = 0; i < shorter.Length; i++)
+        if (TailAligned(shorter, longer, 0, offset, opt))
         {
-            if (!ElementsEqual(shorter[i], longer[offset + i], opt))
-            {
-                isSuffix = false;
-                break;
-            }
+            ReportRun(0, offset);
+            return;
         }
 
-        if (isSuffix)
+        // A single contiguous run was inserted or removed in the middle. Anchor on the longest common
+        // prefix and back off until the remainder of the shorter array lines up with the longer one.
+        var anchor = 0;
+        while (anchor < shorter.Length && ElementsEqual(shorter[anchor], longer[anchor], opt))
+            anchor++;
+
+        for (var start = anchor; start >= 0; start--)
         {
-            // All elements in shorter array match suffix of longer array
-            // Report only the extra elements at the beginning
-            for (var i = 0; i < offset; i++)
+            if (TailAligned(shorter, longer, start, offset, opt))
             {
-                var elementPath = path.Append(i.ToString());
-                if (isAdded)
-                    sink.Add(new JsonChange(ChangeKind.Added, elementPath.ToPointerString(), null, longer[i].Clone()));
-                else
-                    sink.Add(new JsonChange(ChangeKind.Removed, elementPath.ToPointerString(), longer[i].Clone(), null));
+                ReportRun(start, start + offset);
+                return;
             }
-            return;
         }
 
         // Not a simple shift - fall back to index-by-index comparison
@@ -585,32 +573,31 @@ public static class JsonDiffer
             sink.Add(new JsonChange(ChangeKind.Added, path.Append(i.ToString()).ToPointerString(), null, r[i].Clone()));
     }
 
-    private static bool ElementsEqual(JsonElement a, JsonElement b, DiffOptions opt)
+    /// <summary>
+    /// Checks whether <paramref name="shorter"/> from index <paramref name="start"/> onward equals
+    /// <paramref name="longer"/> displaced by <paramref name="shift"/> positions.
+    /// </summary>
+    private static bool TailAligned(JsonElement[] shorter, JsonElement[] longer, int start, int shift, DiffOptions opt)
     {
-        if (a.ValueKind != b.ValueKind)
-            return false;
-
-        switch (a.ValueKind)
+        for (var i = start; i < shorter.Length; i++)
         {
-            case JsonValueKind.Object:
-            // For shift detection, use raw text equality to compare entire objects/arrays
-            return string.Equals(a.GetRawText(), b.GetRawText(), StringComparison.Ordinal);
-            case JsonValueKind.Array:
-                // For shift detection, use raw text equality to compare entire arrays
-                return string.Equals(a.GetRawText(), b.GetRawText(), StringComparison.Ordinal);
-            case JsonValueKind.String:
-                return string.Equals(a.GetString(), b.GetString(), StringComparison.Ordinal);
-            case JsonValueKind.Number:
-                return NumbersEqual(a, b, opt);
-            case JsonValueKind.True:
-            case JsonValueKind.False:
-                return true; // Same ValueKind already guaranteed
-            case JsonValueKind.Null:
-                return true; // Same ValueKind already guaranteed
-            default:
-                return string.Equals(a.GetRawText(), b.GetRawText(), StringComparison.Ordinal);
+            if (!ElementsEqual(shorter[i], longer[i + shift], opt))
+                return false;
         }
+
+        return true;
     }
+
+    /// <summary>
+    /// Compares two array elements for shift detection using the same semantics as the rest of the diff,
+    /// so property order, duplicate-key resolution and numeric tolerance apply inside nested values.
+    /// </summary>
+    private static bool ElementsEqual(JsonElement a, JsonElement b, DiffOptions opt) =>
+        a.ValueKind == b.ValueKind && a.ValueKind switch
+        {
+            JsonValueKind.Object or JsonValueKind.Array => DeepEquals(a, b, opt),
+            _ => ScalarEquals(a, b, opt),
+        };
 
     private static bool ScalarEquals(JsonElement left, JsonElement right, DiffOptions opt)
     {
