@@ -7,7 +7,8 @@ namespace JsonDiff;
 /// </summary>
 /// <param name="Kind">Whether the path was added, removed or changed.</param>
 /// <param name="Path">
-/// JSON-Pointer-ish path to the node, e.g. <c>/user/roles/0</c>. The root is <c>/</c>.
+/// RFC 6901 JSON Pointer to the node, e.g. <c>/user/roles/0</c>, with reference tokens escaped
+/// via <see cref="JsonPointer"/>. The root document is the empty string.
 /// </param>
 /// <param name="Left">The value on the left document, or <c>null</c> for <see cref="ChangeKind.Added"/>.</param>
 /// <param name="Right">The value on the right document, or <c>null</c> for <see cref="ChangeKind.Removed"/>.</param>

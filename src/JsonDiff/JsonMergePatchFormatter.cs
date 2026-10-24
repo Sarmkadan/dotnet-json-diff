@@ -32,10 +32,9 @@ public static class JsonMergePatchFormatter
         var root = new PatchNode();
         foreach (var change in changes)
         {
-            var segments = ParsePath(change.Path);
             var node = root;
 
-            foreach (var segment in segments)
+            foreach (var segment in JsonPointer.Parse(change.Path).Segments)
             {
                 if (IsArrayIndex(segment))
                 {
@@ -63,29 +62,6 @@ public static class JsonMergePatchFormatter
         writer.Flush();
 
         return Encoding.UTF8.GetString(stream.ToArray());
-    }
-
-    private static IReadOnlyList<string> ParsePath(string path)
-    {
-        ArgumentNullException.ThrowIfNull(path);
-
-        if (path.Length == 0)
-        {
-            return Array.Empty<string>();
-        }
-
-        if (path[0] != '/')
-        {
-            throw new FormatException($"A non-empty JSON Pointer must start with '/': '{path}'.");
-        }
-
-        var tokens = path[1..].Split('/');
-        for (var i = 0; i < tokens.Length; i++)
-        {
-            tokens[i] = JsonPointer.Unescape(tokens[i]);
-        }
-
-        return tokens;
     }
 
     private static bool IsArrayIndex(string segment)

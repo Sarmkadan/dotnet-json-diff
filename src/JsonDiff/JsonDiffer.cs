@@ -480,11 +480,9 @@ public static class JsonDiffer
             return false;
         }
 
-        // Parse JSON-Pointer path (simplified - only supports simple property names)
-        var pathSegments = keySelector.Split(new[] {'/'}, StringSplitOptions.RemoveEmptyEntries);
-
+        // Shared RFC 6901 parser, so selectors escape keys exactly like emitted paths do.
         JsonElement current = element;
-        foreach (var segment in pathSegments)
+        foreach (var segment in JsonPointer.Parse(keySelector).Segments)
         {
             if (current.ValueKind != JsonValueKind.Object)
             {
