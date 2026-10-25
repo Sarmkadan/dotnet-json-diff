@@ -11,7 +11,7 @@ namespace JsonDiff.Tests
     /// including numeric tolerance, case sensitivity, boolean values, null vs missing properties,
     /// and type mismatches between empty objects and arrays.
     /// </summary>
-    public class ScalarEdgeCaseTests
+    public class ScalarEdgeCaseTests : IEquatable<ScalarEdgeCaseTests>
     {
         [Fact]
         /// <summary>
@@ -184,5 +184,42 @@ namespace JsonDiff.Tests
             Assert.Equal(ChangeKind.Changed, change.Kind);
             Assert.Equal("", change.Path);
         }
+
+        /// <summary>
+        /// Determines whether the specified <see cref="ScalarEdgeCaseTests"/> is equal to this instance.
+        /// </summary>
+        /// <param name="other">The instance to compare with this one.</param>
+        /// <returns><c>true</c> if <paramref name="other"/> is of the same type; otherwise, <c>false</c>.</returns>
+        public bool Equals(ScalarEdgeCaseTests? other) => other is not null && GetType() == other.GetType();
+
+        /// <summary>
+        /// Determines whether the specified object is equal to this instance.
+        /// </summary>
+        /// <param name="obj">The object to compare with this one.</param>
+        /// <returns><c>true</c> if <paramref name="obj"/> is an equal <see cref="ScalarEdgeCaseTests"/>; otherwise, <c>false</c>.</returns>
+        public override bool Equals(object? obj) => Equals(obj as ScalarEdgeCaseTests);
+
+        /// <summary>
+        /// Returns a hash code for this instance, consistent with <see cref="Equals(ScalarEdgeCaseTests?)"/>.
+        /// </summary>
+        /// <returns>A hash code for this instance.</returns>
+        public override int GetHashCode() => HashCode.Combine(GetType());
+
+        /// <summary>
+        /// Determines whether two <see cref="ScalarEdgeCaseTests"/> instances are equal.
+        /// </summary>
+        /// <param name="left">The first instance.</param>
+        /// <param name="right">The second instance.</param>
+        /// <returns><c>true</c> if the instances are equal; otherwise, <c>false</c>.</returns>
+        public static bool operator ==(ScalarEdgeCaseTests? left, ScalarEdgeCaseTests? right) =>
+            left is null ? right is null : left.Equals(right);
+
+        /// <summary>
+        /// Determines whether two <see cref="ScalarEdgeCaseTests"/> instances are not equal.
+        /// </summary>
+        /// <param name="left">The first instance.</param>
+        /// <param name="right">The second instance.</param>
+        /// <returns><c>true</c> if the instances are not equal; otherwise, <c>false</c>.</returns>
+        public static bool operator !=(ScalarEdgeCaseTests? left, ScalarEdgeCaseTests? right) => !(left == right);
     }
 }
