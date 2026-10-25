@@ -9,7 +9,7 @@ namespace JsonDiff.Tests;
 /// Test suite for JSON diffing functionality.
 /// Validates that the JsonDiffer correctly identifies and reports differences between JSON documents.
 /// </summary>
-public class DiffTests
+public class DiffTests : IDiffTests
 {
     /// <summary>
     /// Tests that identical JSON documents produce no differences.
