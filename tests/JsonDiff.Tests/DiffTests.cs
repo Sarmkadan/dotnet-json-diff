@@ -9,7 +9,7 @@ namespace JsonDiff.Tests;
 /// Test suite for JSON diffing functionality.
 /// Validates that the JsonDiffer correctly identifies and reports differences between JSON documents.
 /// </summary>
-public class DiffTests : IDiffTests
+public class DiffTests : IDiffTests, IEquatable<DiffTests>
 {
     /// <summary>
     /// Tests that identical JSON documents produce no differences.
@@ -371,4 +371,41 @@ public class DiffTests : IDiffTests
         var changes = JsonDiffer.Diff(left, right, opts);
         Assert.Empty(changes);
     }
+
+    /// <summary>
+    /// Determines whether the specified <see cref="DiffTests"/> is equal to the current instance.
+    /// The fixture holds no state, so any non-null instance is equal.
+    /// </summary>
+    /// <param name="other">The instance to compare with the current instance.</param>
+    /// <returns><c>true</c> if <paramref name="other"/> is not null; otherwise, <c>false</c>.</returns>
+    public bool Equals(DiffTests? other) => other is not null;
+
+    /// <summary>
+    /// Determines whether the specified object is equal to the current instance.
+    /// </summary>
+    /// <param name="obj">The object to compare with the current instance.</param>
+    /// <returns><c>true</c> if <paramref name="obj"/> is a <see cref="DiffTests"/> equal to this instance; otherwise, <c>false</c>.</returns>
+    public override bool Equals(object? obj) => Equals(obj as DiffTests);
+
+    /// <summary>
+    /// Returns a hash code for the current instance, consistent with <see cref="Equals(DiffTests?)"/>.
+    /// </summary>
+    /// <returns>A hash code derived from the fixture type.</returns>
+    public override int GetHashCode() => HashCode.Combine(typeof(DiffTests));
+
+    /// <summary>
+    /// Determines whether two <see cref="DiffTests"/> instances are equal.
+    /// </summary>
+    /// <param name="left">The first instance.</param>
+    /// <param name="right">The second instance.</param>
+    /// <returns><c>true</c> if the instances are equal; otherwise, <c>false</c>.</returns>
+    public static bool operator ==(DiffTests? left, DiffTests? right) => Equals(left, right);
+
+    /// <summary>
+    /// Determines whether two <see cref="DiffTests"/> instances are not equal.
+    /// </summary>
+    /// <param name="left">The first instance.</param>
+    /// <param name="right">The second instance.</param>
+    /// <returns><c>true</c> if the instances are not equal; otherwise, <c>false</c>.</returns>
+    public static bool operator !=(DiffTests? left, DiffTests? right) => !(left == right);
 }
